@@ -1,6 +1,9 @@
-use desktop_shell::shell::runtime_boundary::SHELL_ALLOWED_COMMANDS;
+use std::collections::HashSet;
 use std::fs;
 use std::path::PathBuf;
+use tunnel_mcp::shell::runtime_boundary::{
+    registered_command_names, PRODUCT_COMMANDS, SHELL_COMMANDS,
+};
 
 fn manifest_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -43,13 +46,13 @@ fn extract_generate_handler_commands(source: &str) -> Vec<String> {
 }
 
 #[test]
-fn lib_rs_generate_handler_should_match_allowed_shell_commands_exactly() {
+fn lib_rs_generate_handler_should_match_registered_commands_exactly() {
     let source = read_source("src/lib.rs");
     let commands = extract_generate_handler_commands(&source);
-    let allowed = SHELL_ALLOWED_COMMANDS
-        .iter()
+    let allowed: Vec<String> = registered_command_names()
+        .into_iter()
         .map(|command| command.to_string())
-        .collect::<Vec<_>>();
+        .collect();
 
     assert_eq!(commands, allowed);
 }
@@ -65,7 +68,6 @@ fn lib_rs_should_not_export_legacy_business_modules() {
         "pub use config",
         "pub use database",
         "pub use deeplink",
-        "pub use mcp",
         "pub use provider",
         "pub use services",
         "pub use settings",
@@ -97,28 +99,27 @@ fn lib_rs_should_not_export_legacy_business_modules() {
 }
 
 #[test]
-fn lib_rs_should_only_mount_shell_commands() {
+fn lib_rs_should_mount_shell_and_product_commands() {
     let source = read_source("src/lib.rs");
 
-    for command in [
-        "get_app_info",
-        "open_external",
-        "get_settings",
-        "save_settings",
-        "update_tray_menu",
-    ] {
-        assert!(source.contains(command), "missing shell command: {command}");
+    for command in SHELL_COMMANDS.iter().chain(PRODUCT_COMMANDS.iter()) {
+        assert!(source.contains(command), "missing command: {command}");
     }
 
+    // The product layer adds `tunnel` / `mcp` commands; lib.rs is
+    // allowed (and required) to mount them. There is no other
+    // forbidden business vocabulary introduced at the boundary
+    // because anything else from the historical legacy is caught by
+    // `shell_boundary_test`.
     let lower = source.to_lowercase();
     for forbidden in [
         "provider",
         "proxy",
-        "mcp",
         "prompt",
         "skills",
         "usage",
         "webdav",
+        "s3_sync",
         "codex",
         "gemini",
         "claude",
@@ -140,10 +141,15 @@ fn lib_rs_should_only_mount_shell_commands() {
 }
 
 #[test]
-fn commands_mod_should_only_expose_shell_commands() {
+fn commands_mod_should_only_expose_shell_and_product_commands() {
     let source = read_source("src/commands/mod.rs").to_lowercase();
 
-    for required in ["pub mod app;", "pub mod settings;", "pub mod shell;"] {
+    for required in [
+        "pub mod app;",
+        "pub mod settings;",
+        "pub mod shell;",
+        "pub mod tunnel;",
+    ] {
         assert!(
             source.contains(required),
             "missing command module: {required}"
@@ -163,14 +169,11 @@ fn commands_mod_should_only_expose_shell_commands() {
         "global_proxy",
         "hermes",
         "import_export",
-        "mcp",
         "misc",
         "model_fetch",
         "omo",
         "openclaw",
         "plugin",
-        "prompt",
-        "provider",
         "proxy",
         "session_manager",
         "skill",
@@ -223,6 +226,24 @@ fn lib_rs_run_function_should_not_trigger_business_setup() {
         assert!(
             !body.contains(forbidden),
             "lib.rs::run() body should not reference legacy business call: {forbidden}"
+        );
+    }
+}
+
+#[test]
+fn registered_commands_should_split_between_shell_and_product() {
+    let commands: HashSet<&str> = registered_command_names().into_iter().collect();
+
+    for command in SHELL_COMMANDS {
+        assert!(
+            commands.contains(command),
+            "missing shell command: {command}"
+        );
+    }
+    for command in PRODUCT_COMMANDS {
+        assert!(
+            commands.contains(command),
+            "missing product command: {command}"
         );
     }
 }

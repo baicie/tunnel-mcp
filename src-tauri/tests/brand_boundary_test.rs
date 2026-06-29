@@ -1,4 +1,4 @@
-use desktop_shell::shell::brand::{app_title, brand_values, APP_BRAND};
+use tunnel_mcp::shell::brand::{app_title, brand_values, APP_BRAND};
 
 #[test]
 fn brand_should_have_template_identity() {

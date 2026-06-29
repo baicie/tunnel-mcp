@@ -1,7 +1,7 @@
-use desktop_shell::shell::settings_store::{
+use tempfile::tempdir;
+use tunnel_mcp::shell::settings_store::{
     load_settings_from_path, save_settings_to_path, ShellSettings, ThemeMode,
 };
-use tempfile::tempdir;
 
 #[test]
 fn missing_settings_should_return_default() {

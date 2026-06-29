@@ -1,6 +1,6 @@
-use desktop_shell::shell::runtime_boundary::SHELL_FORBIDDEN_MARKERS;
 use std::fs;
 use std::path::{Path, PathBuf};
+use tunnel_mcp::shell::runtime_boundary::SHELL_FORBIDDEN_MARKERS;
 
 fn manifest_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -30,14 +30,28 @@ fn walk(dir: &Path, files: &mut Vec<PathBuf>) {
     }
 }
 
+/// Paths that legitimately reference the shell-only `runtime_boundary`
+/// vocabulary. The boundary scanner and the runtime boundary module
+/// itself must mention every marker; we exclude them from the scan.
+fn is_marker_aware(rel: &str) -> bool {
+    rel == "src/shell/runtime_boundary.rs" || rel.starts_with("src/shell/runtime_boundary")
+}
+
+/// The Tunnel MCP product layer is allowed to name its own features.
+/// Markers like `tunnel`, `mcp`, `provider` are intrinsic to the
+/// product namespace and only checked outside the product directory.
+fn is_product_path(rel: &str) -> bool {
+    rel.starts_with("src/product/")
+        || rel.starts_with("src/product")
+        || rel.starts_with("src/commands/tunnel")
+}
+
 #[test]
 fn src_tauri_src_should_not_contain_legacy_business_markers() {
     let root = manifest_dir().join("src");
     let mut files = Vec::new();
 
     walk(&root, &mut files);
-
-    let allow_list = ["src/shell/runtime_boundary.rs"];
 
     let mut violations = Vec::new();
 
@@ -48,7 +62,11 @@ fn src_tauri_src_should_not_contain_legacy_business_markers() {
             .to_string_lossy()
             .replace('\\', "/");
 
-        if allow_list.contains(&rel.as_str()) {
+        if is_marker_aware(&rel) {
+            continue;
+        }
+
+        if is_product_path(&rel) {
             continue;
         }
 

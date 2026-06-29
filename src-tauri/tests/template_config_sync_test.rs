@@ -1,6 +1,6 @@
-use desktop_shell::shell::brand::APP_BRAND;
 use std::fs;
 use std::path::PathBuf;
+use tunnel_mcp::shell::brand::APP_BRAND;
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))

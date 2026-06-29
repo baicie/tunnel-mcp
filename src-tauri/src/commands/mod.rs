@@ -1,8 +1,9 @@
-// The desktop shell exposes three Tauri command modules: `app`,
-// `settings`, and `shell`. Product-specific commands should not be
-// added as `pub use xxx::*;` re-exports here. Integration tests access
-// shell behaviour through `pub mod shell`, not through this adapter
-// layer.
 pub mod app;
 pub mod settings;
 pub mod shell;
+
+// Product modules live below the shell surface. They follow the same
+// command-adapter convention but are wired through `lib.rs` into the
+// same `invoke_handler` so that the shell template stays free of
+// tunnel / mcp business logic.
+pub mod tunnel;

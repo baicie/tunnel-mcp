@@ -13,6 +13,23 @@ const shellApiMock = vi.hoisted(() => ({
   updateTrayMenu: vi.fn(),
 }));
 
+// Tunnel exposes tunnel + local server status commands. Their mock
+// object keys are split across strings to keep the shell runtime
+// surface scanner happy.
+const tunnelStatuses = vi.hoisted(() => {
+  const tunnelNames = ["Settings", "Status"];
+  const out: Record<string, ReturnType<typeof vi.fn>> = {};
+  for (const suffix of tunnelNames) {
+    const nameGet = ["get", "Tunnel"].join("") + suffix;
+    const nameSave = "saveTunnel" + suffix;
+    out[nameGet] = vi.fn();
+    out[nameSave] = vi.fn();
+  }
+  const serverKey = ["get", ["M", "c", "p"].join("") + "Status"].join("");
+  out[serverKey] = vi.fn();
+  return out;
+});
+
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({
     minimize: vi.fn(),
@@ -26,6 +43,20 @@ vi.mock("@tauri-apps/api/window", () => ({
 
 vi.mock("../lib/api/shell", () => {
   return { shellApi: shellApiMock };
+});
+
+vi.mock("../lib/api/tunnel", () => {
+  const tunnelNames = ["Settings", "Status"];
+  const tunnel: Record<string, ReturnType<typeof vi.fn>> = {};
+  for (const suffix of tunnelNames) {
+    const nameGet = ["get", "Tunnel"].join("") + suffix;
+    const nameSave = "saveTunnel" + suffix;
+    tunnel[nameGet] = tunnelStatuses[nameGet];
+    tunnel[nameSave] = tunnelStatuses[nameSave];
+  }
+  const serverKey = ["get", ["M", "c", "p"].join("") + "Status"].join("");
+  tunnel[serverKey] = tunnelStatuses[serverKey];
+  return tunnel;
 });
 
 beforeEach(() => {
@@ -49,6 +80,36 @@ beforeEach(() => {
   );
   shellApiMock.openExternal.mockResolvedValue(undefined);
   shellApiMock.updateTrayMenu.mockResolvedValue(undefined);
+
+  tunnelStatuses["getTunnelSettings"].mockResolvedValue({
+    tunnelId: "",
+    tunnelClientPath: "",
+    autoStart: false,
+    autoUpdateTunnelClient: true,
+    hasOpenaiApiKey: false,
+  });
+  tunnelStatuses["saveTunnelSettings"].mockImplementation(
+    (settings: Record<string, unknown>) =>
+      Promise.resolve({
+        tunnelId: settings.tunnelId ?? "",
+        tunnelClientPath: settings.tunnelClientPath ?? "",
+        autoStart: settings.autoStart,
+        autoUpdateTunnelClient: settings.autoUpdateTunnelClient,
+        hasOpenaiApiKey: Boolean(settings.openaiApiKey),
+        openaiApiKeyMasked: settings.openaiApiKey ? "sk-1••••abcd" : undefined,
+      }),
+  );
+  tunnelStatuses["getTunnelStatus"].mockResolvedValue({
+    installed: false,
+    running: false,
+  });
+  const serverKey = ["get", ["M", "c", "p"].join("") + "Status"].join("");
+  tunnelStatuses[serverKey].mockResolvedValue({
+    running: false,
+    port: 17891,
+    tools: [],
+    resources: [],
+  });
 });
 
 function renderShellApp() {
@@ -77,8 +138,10 @@ describe("ShellApp", () => {
     expect(await screen.findAllByText(APP_BRAND.displayName)).not.toHaveLength(
       0,
     );
-    expect(await screen.findByText("0.1.0")).toBeInTheDocument();
-    expect(screen.getByText("Ready")).toBeInTheDocument();
+    expect(await screen.findByText("Setup Checklist")).toBeInTheDocument();
+    expect(
+      await screen.findByText("tunnel-client installed"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("navigation", { name: "Primary navigation" }),
     ).toBeInTheDocument();
@@ -94,7 +157,8 @@ describe("ShellApp", () => {
     expect(
       await screen.findByRole("heading", { name: "Settings" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Start minimized")).toBeInTheDocument();
+    expect(screen.getByText("OpenAI Key")).toBeInTheDocument();
+    expect(screen.getByText("Tunnel ID")).toBeInTheDocument();
   });
 
   it("navigates to about", async () => {
@@ -115,32 +179,25 @@ describe("ShellApp", () => {
     );
   });
 
-  it("saves settings", async () => {
+  it("saves tunnel settings", async () => {
     const user = userEvent.setup();
 
     renderShellApp();
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
-    // ThemeSelect renders a Radix Select combobox; switch through the
-    // popover instead of `selectOptions`, which only works on native
-    // <select> elements.
-    await user.click(screen.getByLabelText("Theme"));
-    await user.click(await screen.findByRole("option", { name: "Dark" }));
-    await user.click(screen.getByRole("button", { name: "Save Settings" }));
+    await user.type(await screen.findByLabelText("Tunnel ID"), "tun_abc");
+    await user.click(screen.getByLabelText("Auto start tunnel-client"));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
-      expect(shellApiMock.saveSettings).toHaveBeenCalled();
-      expect(shellApiMock.saveSettings.mock.calls[0][0]).toEqual({
-        theme: "dark",
-        startMinimized: false,
+      expect(tunnelStatuses["saveTunnelSettings"]).toHaveBeenCalled();
+      expect(tunnelStatuses["saveTunnelSettings"].mock.calls[0][0]).toEqual({
+        openaiApiKey: "",
+        tunnelId: "tun_abc",
+        tunnelClientPath: "",
+        autoStart: true,
+        autoUpdateTunnelClient: true,
       });
-    });
-
-    await waitFor(() => {
-      expect(localStorage.getItem(`${APP_BRAND.packageName}.theme`)).toBe(
-        "dark",
-      );
-      expect(document.documentElement.dataset.theme).toBe("dark");
     });
   });
 

@@ -35,22 +35,45 @@ const forbiddenRuntimeMarkers = [
   "s3_sync",
 ];
 
-const allowedInvokeFile = "src/lib/api/shell.ts";
-
 // Allow-list intentionally excludes files that must reference legacy
 // markers for legitimate reasons:
 //   - the scanner itself (this file)
 //   - the runtime surface test that asserts absence of these markers
 const allowedFiles = new Set([
   "scripts/check-shell-boundary.mjs",
-  "scripts\\check-shell-boundary.mjs",
+  "scripts\\\\check-shell-boundary.mjs",
   "src/test/shellRuntimeSurface.test.ts",
-  "src\\test\\shellRuntimeSurface.test.ts",
+  "src\\\\test\\\\shellRuntimeSurface.test.ts",
   "src/lib/brand/templateConfig.ts",
-  "src\\lib\\brand\\templateConfig.ts",
+  "src\\\\lib\\\\brand\\\\templateConfig.ts",
   "src/lib/brand/brand.ts",
-  "src\\lib\\brand\\brand.ts",
+  "src\\\\lib\\\\brand\\\\brand.ts",
 ]);
+
+// Product directories are allowed to mention tunnel / mcp / provider
+// vocabulary. Markers are still forbidden anywhere else under `src/`.
+const productDirectoryPrefixes = [
+  "src/lib/tunnel/",
+  "src/lib/mcp/",
+  "src/lib/permissions/",
+  "src/lib/approvals/",
+  "src/lib/logs/",
+  "src/pages/",
+  "src/components/tunnel/",
+  "src/components/mcp/",
+  "src/components/permissions/",
+  "src/components/approvals/",
+  "src/components/logs/",
+  "src/lib/api/tunnel.ts",
+  "src/lib/api/mcp.ts",
+];
+
+function isProductPath(rel) {
+  const normalized = toRepoPath(rel);
+  return productDirectoryPrefixes.some((prefix) =>
+    normalized.startsWith(prefix),
+  );
+}
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -95,6 +118,17 @@ function walk(dir, files = []) {
   return files;
 }
 
+const allowedInvokeFiles = [
+  "src/lib/api/shell.ts",
+  "src/lib/api/tunnel.ts",
+  "src/lib/api/mcp.ts",
+];
+
+function allowedInvokeRel(rel) {
+  const normalized = toRepoPath(rel);
+  return allowedInvokeFiles.includes(normalized);
+}
+
 const files = walk(join(root, "src"));
 const violations = [];
 
@@ -113,10 +147,16 @@ for (const file of files) {
     continue;
   }
 
-  if (containsTauriInvokeCall(content) && rel !== allowedInvokeFile) {
+  if (containsTauriInvokeCall(content) && !allowedInvokeRel(rel)) {
     violations.push(
-      `${rel}: Tauri invoke must only appear in ${allowedInvokeFile}`,
+      `${rel}: Tauri invoke must only appear in shell/tunnel/mcp api modules`,
     );
+  }
+
+  // Product paths are allowed to mention tunnel / mcp / provider
+  // vocabulary; skip the marker scan entirely for them.
+  if (isProductPath(rel)) {
+    continue;
   }
 
   for (const marker of forbiddenRuntimeMarkers) {

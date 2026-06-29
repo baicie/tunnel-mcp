@@ -1,4 +1,4 @@
-use desktop_shell::shell::external_url::{is_allowed_external_url, validate_external_url};
+use tunnel_mcp::shell::external_url::{is_allowed_external_url, validate_external_url};
 
 #[test]
 fn should_allow_safe_external_urls() {

@@ -1,13 +1,15 @@
 // Desktop shell runtime entrypoint.
 //
 // The shell only exposes a minimal Tauri command set plus a tray
-// no-op. Product-specific commands must live under their own modules
-// and reach `pub mod shell` through pure logic — they should never be
-// re-exported from `lib.rs` or wired into the tauri invoke_handler
-// directly. Integration tests verify this boundary in
-// `tests/runtime_boundary_test.rs` and `tests/shell_boundary_test.rs`.
+// no-op. Product-specific commands live under the `commands` module
+// as adapters that delegate to the product layer in `crate::product`.
+// They are still wired into `tauri::generate_handler!` here, with the
+// full command surface validated by `assert_runtime_boundary` so that
+// drift between the registered list and the design contract is caught
+// at startup.
 mod commands;
 pub mod error;
+mod product;
 pub mod shell;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -31,9 +33,13 @@ pub fn run() {
             commands::settings::get_settings,
             commands::settings::save_settings,
             commands::shell::update_tray_menu,
+            commands::tunnel::get_tunnel_settings,
+            commands::tunnel::save_tunnel_settings,
+            commands::tunnel::get_tunnel_status,
+            commands::tunnel::get_mcp_status,
         ])
         .setup(|app| {
-            shell::runtime_boundary::assert_shell_runtime_boundary(
+            shell::runtime_boundary::assert_runtime_boundary(
                 shell::runtime_boundary::registered_command_names().as_slice(),
             )
             .map_err(Box::<dyn std::error::Error>::from)?;

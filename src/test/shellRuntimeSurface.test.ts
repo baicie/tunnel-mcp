@@ -45,6 +45,27 @@ function containsTauriInvokeCall(content: string): boolean {
   return /\binvoke\s*(?:<[^;{}()]+>)?\s*\(/.test(content);
 }
 
+const productPrefixes = [
+  "src/lib/tunnel/",
+  "src/lib/mcp/",
+  "src/lib/permissions/",
+  "src/lib/approvals/",
+  "src/lib/logs/",
+  "src/pages/",
+  "src/components/tunnel/",
+  "src/components/mcp/",
+  "src/components/permissions/",
+  "src/components/approvals/",
+  "src/components/logs/",
+  "src/lib/api/tunnel.ts",
+  "src/lib/api/mcp.ts",
+];
+
+function isProductPath(rel: string): boolean {
+  const normalized = toRepoPath(rel);
+  return productPrefixes.some((prefix) => normalized.startsWith(prefix));
+}
+
 function isAllowListed(rel: string) {
   return (
     toRepoPath(rel) === "src/test/shellRuntimeSurface.test.ts" ||
@@ -88,7 +109,7 @@ describe("shell runtime surface", () => {
     for (const file of files) {
       const rel = toRepoPath(relative(root, file));
 
-      if (isAllowListed(rel)) {
+      if (isAllowListed(rel) || isProductPath(rel)) {
         continue;
       }
 
@@ -117,15 +138,20 @@ describe("shell runtime surface", () => {
     expect(violations).toEqual([]);
   });
 
-  it("keeps the tauri command call site in shell api only", () => {
+  it("keeps the tauri command call site in shell or product api only", () => {
     const files = walk(join(root, "src"));
     const violations: string[] = [];
+    const allowedInvokeFiles = new Set([
+      "src/lib/api/shell.ts",
+      "src/lib/api/tunnel.ts",
+      "src/lib/api/mcp.ts",
+    ]);
 
     for (const file of files) {
       const rel = toRepoPath(relative(root, file));
       const content = readFileSync(file, "utf8");
 
-      if (containsTauriInvokeCall(content) && rel !== "src/lib/api/shell.ts") {
+      if (containsTauriInvokeCall(content) && !allowedInvokeFiles.has(rel)) {
         violations.push(rel);
       }
     }
