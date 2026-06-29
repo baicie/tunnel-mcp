@@ -16,7 +16,7 @@ doctest = false
 
 # The bin target keeps `src/main.rs` for Tauri's default entrypoint,
 # but is given an explicit name so its artifact (`shell.exe` /
-# `shell.pdb`) does not collide with the lib target's `desktop_shell`
+# `shell.pdb`) does not collide with the lib target's `tunnel_mcp`
 # artifact on case-insensitive filesystems like Windows NTFS and
 # macOS APFS by default.
 [[bin]]
