@@ -40,6 +40,12 @@ added later. See `docs/agents/domain.md`.
 - Use `ci-cd-and-automation` when editing `.github/workflows/`.
 - Use `review` before merging larger changes.
 
+### Language
+
+- 除非用户明确要求其它语言,Agent 在本仓库中的回复一律使用中文(简体)。
+  代码、commit message、PR 标题/描述以及文件内容继续沿用英文等原有约定,
+  不要因为中文回复而改动代码或文档语言。
+
 ## Coding Rules
 
 - Prefer existing structure over new abstractions.
