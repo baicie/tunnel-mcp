@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { checkDocs, requiredDocs } from "./check-docs.mjs";
 
 function createTempProject() {
-  return mkdtempSync(join(tmpdir(), "desktop-shell-docs-"));
+  return mkdtempSync(join(tmpdir(), "tunnel-mcp-docs-"));
 }
 
 function writeRequiredDocs(root) {
@@ -31,28 +31,21 @@ describe("check-docs", () => {
     const root = createTempProject();
 
     expect(checkDocs(root)).toContain("README.md is missing");
+    expect(checkDocs(root)).toContain(
+      "docs/agents/issue-tracker.md is missing",
+    );
   });
 
   it("reports missing sections", () => {
     const root = createTempProject();
 
-    mkdirSync(join(root, "docs"), { recursive: true });
+    mkdirSync(join(root, "docs", "agents"), { recursive: true });
+    writeFileSync(join(root, "README.md"), "# Tunnel MCP\n", "utf8");
     writeFileSync(
-      join(root, "README.md"),
-      "# Desktop Shell Template\n",
+      join(root, "docs/agents/issue-tracker.md"),
+      "# Issue Tracker: GitHub\n",
       "utf8",
     );
-    writeFileSync(
-      join(root, "docs/template-guide.md"),
-      "# Template Guide\n",
-      "utf8",
-    );
-    writeFileSync(
-      join(root, "docs/architecture.md"),
-      "# Architecture\n",
-      "utf8",
-    );
-    writeFileSync(join(root, "docs/checks.md"), "# Checks\n", "utf8");
 
     const violations = checkDocs(root);
 
@@ -60,13 +53,7 @@ describe("check-docs", () => {
       "README.md is missing section: ## What is this",
     );
     expect(violations).toContain(
-      "docs/template-guide.md is missing section: ## 1. Create your app",
-    );
-    expect(violations).toContain(
-      "docs/architecture.md is missing section: ## Overview",
-    );
-    expect(violations).toContain(
-      "docs/checks.md is missing section: ## App checks",
+      "docs/agents/issue-tracker.md is missing section: ## Conventions",
     );
   });
 
@@ -76,13 +63,12 @@ describe("check-docs", () => {
     writeRequiredDocs(root);
 
     writeFileSync(
-      join(root, "docs/template-guide.md"),
+      join(root, "README.md"),
       [
-        "# Template Guide",
-        ...requiredDocs.find((doc) => doc.path === "docs/template-guide.md")
+        "# Tunnel MCP",
+        ...requiredDocs.find((doc) => doc.path === "README.md")
           .requiredSections,
-        "PHASE_ALLOWED_COMMANDS",
-        "PHASE6_ALLOWED_COMMANDS",
+        "# Desktop Shell Template",
       ].join("\n\n"),
       "utf8",
     );
@@ -90,10 +76,7 @@ describe("check-docs", () => {
     const violations = checkDocs(root);
 
     expect(violations).toContain(
-      "docs/template-guide.md contains stale or misleading snippet: PHASE_ALLOWED_COMMANDS",
-    );
-    expect(violations).toContain(
-      "docs/template-guide.md contains stale or misleading snippet: PHASE6_ALLOWED_COMMANDS",
+      "README.md contains stale or misleading snippet: # Desktop Shell Template",
     );
   });
 });

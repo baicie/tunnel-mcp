@@ -39,6 +39,8 @@ const forbiddenRuntimeMarkers = [
 // markers for legitimate reasons:
 //   - the scanner itself (this file)
 //   - the runtime surface test that asserts absence of these markers
+//   - the route registry, which legitimately names product pages such as
+//     McpServerPage after Phase 1
 const allowedFiles = new Set([
   "scripts/check-shell-boundary.mjs",
   "scripts\\\\check-shell-boundary.mjs",
@@ -48,6 +50,8 @@ const allowedFiles = new Set([
   "src\\\\lib\\\\brand\\\\templateConfig.ts",
   "src/lib/brand/brand.ts",
   "src\\\\lib\\\\brand\\\\brand.ts",
+  "src/app/routes.tsx",
+  "src\\\\app\\\\routes.tsx",
 ]);
 
 // Product directories are allowed to mention tunnel / mcp / provider

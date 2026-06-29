@@ -1,7 +1,12 @@
+export type LogLevel = "error" | "warn" | "info" | "debug" | "trace";
+
 export type TunnelSettings = {
   openaiApiKey?: string;
   tunnelId?: string;
   tunnelClientPath?: string;
+  resourceRoot?: string;
+  mcpServerPort: number;
+  logLevel: LogLevel;
   autoStart: boolean;
   autoUpdateTunnelClient: boolean;
 };

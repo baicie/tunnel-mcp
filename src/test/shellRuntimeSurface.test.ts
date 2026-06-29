@@ -70,7 +70,8 @@ function isAllowListed(rel: string) {
   return (
     toRepoPath(rel) === "src/test/shellRuntimeSurface.test.ts" ||
     toRepoPath(rel) === "src/lib/brand/templateConfig.ts" ||
-    toRepoPath(rel) === "src/lib/brand/brand.ts"
+    toRepoPath(rel) === "src/lib/brand/brand.ts" ||
+    toRepoPath(rel) === "src/app/routes.tsx"
   );
 }
 

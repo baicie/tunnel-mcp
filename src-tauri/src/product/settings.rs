@@ -2,12 +2,28 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+const DEFAULT_MCP_SERVER_PORT: u16 = 17891;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Error,
+    Warn,
+    #[default]
+    Info,
+    Debug,
+    Trace,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct TunnelSettings {
     pub openai_api_key: Option<String>,
     pub tunnel_id: Option<String>,
     pub tunnel_client_path: Option<String>,
+    pub resource_root: Option<String>,
+    pub mcp_server_port: u16,
+    pub log_level: LogLevel,
     pub auto_start: bool,
     pub auto_update_tunnel_client: bool,
 }
@@ -18,6 +34,9 @@ impl Default for TunnelSettings {
             openai_api_key: None,
             tunnel_id: None,
             tunnel_client_path: None,
+            resource_root: None,
+            mcp_server_port: DEFAULT_MCP_SERVER_PORT,
+            log_level: LogLevel::Info,
             auto_start: false,
             auto_update_tunnel_client: true,
         }
@@ -29,6 +48,9 @@ impl Default for TunnelSettings {
 pub struct PublicTunnelSettings {
     pub tunnel_id: Option<String>,
     pub tunnel_client_path: Option<String>,
+    pub resource_root: Option<String>,
+    pub mcp_server_port: u16,
+    pub log_level: LogLevel,
     pub auto_start: bool,
     pub auto_update_tunnel_client: bool,
     pub openai_api_key_masked: Option<String>,
@@ -83,62 +105,142 @@ impl SettingsStore {
         if !self.path.exists() {
             return Ok(TunnelSettings::default());
         }
+
         let raw = fs::read_to_string(&self.path)?;
         let file: SettingsFile = serde_json::from_str(&raw)?;
-        Ok(file.tunnel)
+        Ok(normalize_loaded_settings(file.tunnel))
     }
 
     pub fn save(&self, next: TunnelSettings) -> Result<TunnelSettings, SettingsError> {
         if let Some(parent) = self.path.parent() {
             fs::create_dir_all(parent)?;
         }
+
+        let existing_openai_key = if self.path.exists() {
+            self.load()?.openai_api_key
+        } else {
+            None
+        };
+
+        let normalized = normalize_settings_for_save(next, existing_openai_key);
+
         let file = SettingsFile {
             version: 1,
-            tunnel: next.clone(),
+            tunnel: normalized.clone(),
         };
+
         let raw = serde_json::to_string_pretty(&file)?;
         fs::write(&self.path, raw)?;
-        Ok(next)
+        Ok(normalized)
+    }
+}
+
+fn normalize_optional_string(value: Option<String>) -> Option<String> {
+    value.and_then(|raw| {
+        let trimmed = raw.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
+fn normalize_port(value: u16) -> u16 {
+    if value == 0 {
+        DEFAULT_MCP_SERVER_PORT
+    } else {
+        value
+    }
+}
+
+fn normalize_loaded_settings(settings: TunnelSettings) -> TunnelSettings {
+    TunnelSettings {
+        openai_api_key: normalize_optional_string(settings.openai_api_key),
+        tunnel_id: normalize_optional_string(settings.tunnel_id),
+        tunnel_client_path: normalize_optional_string(settings.tunnel_client_path),
+        resource_root: normalize_optional_string(settings.resource_root),
+        mcp_server_port: normalize_port(settings.mcp_server_port),
+        log_level: settings.log_level,
+        auto_start: settings.auto_start,
+        auto_update_tunnel_client: settings.auto_update_tunnel_client,
+    }
+}
+
+fn normalize_settings_for_save(
+    settings: TunnelSettings,
+    existing_openai_key: Option<String>,
+) -> TunnelSettings {
+    let normalized = normalize_loaded_settings(settings);
+
+    TunnelSettings {
+        openai_api_key: normalized
+            .openai_api_key
+            .or_else(|| normalize_optional_string(existing_openai_key)),
+        ..normalized
     }
 }
 
 pub fn to_public_settings(settings: TunnelSettings) -> PublicTunnelSettings {
-    let has_key = settings
-        .openai_api_key
-        .as_ref()
-        .is_some_and(|value| !value.is_empty());
+    let normalized = normalize_loaded_settings(settings);
+    let has_key = normalized.openai_api_key.is_some();
+
     PublicTunnelSettings {
-        tunnel_id: settings.tunnel_id,
-        tunnel_client_path: settings.tunnel_client_path,
-        auto_start: settings.auto_start,
-        auto_update_tunnel_client: settings.auto_update_tunnel_client,
-        openai_api_key_masked: settings.openai_api_key.as_deref().and_then(mask_secret),
+        tunnel_id: normalized.tunnel_id,
+        tunnel_client_path: normalized.tunnel_client_path,
+        resource_root: normalized.resource_root,
+        mcp_server_port: normalized.mcp_server_port,
+        log_level: normalized.log_level,
+        auto_start: normalized.auto_start,
+        auto_update_tunnel_client: normalized.auto_update_tunnel_client,
+        openai_api_key_masked: normalized.openai_api_key.as_deref().and_then(mask_secret),
         has_openai_api_key: has_key,
     }
 }
 
 pub fn mask_secret(value: &str) -> Option<String> {
-    if value.is_empty() {
+    let normalized = value.trim();
+    if normalized.is_empty() {
         return None;
     }
-    if value.len() <= 8 {
-        return Some("••••".to_string());
+
+    let chars: Vec<char> = normalized.chars().collect();
+    if chars.len() <= 8 {
+        return Some("\u{2022}\u{2022}\u{2022}\u{2022}".to_string());
     }
-    Some(format!("{}••••{}", &value[..4], &value[value.len() - 4..]))
+
+    let prefix: String = chars.iter().take(4).collect();
+    let suffix: String = chars.iter().skip(chars.len().saturating_sub(4)).collect();
+
+    Some(format!("{prefix}\u{2022}\u{2022}\u{2022}\u{2022}{suffix}"))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{mask_secret, to_public_settings, SettingsStore, TunnelSettings};
+    use super::{mask_secret, to_public_settings, LogLevel, SettingsStore, TunnelSettings};
     use tempfile::tempdir;
 
     #[test]
     fn mask_secret_hides_value() {
         assert_eq!(mask_secret(""), None);
-        assert_eq!(mask_secret("abc"), Some("••••".to_string()));
+        assert_eq!(mask_secret("   "), None);
+        assert_eq!(
+            mask_secret("abc"),
+            Some("\u{2022}\u{2022}\u{2022}\u{2022}".to_string())
+        );
         assert_eq!(
             mask_secret("sk-1234567890abcd"),
-            Some("sk-1••••abcd".to_string())
+            Some(format!("sk-1\u{2022}\u{2022}\u{2022}\u{2022}abcd"))
+        );
+    }
+
+    #[test]
+    fn mask_secret_handles_non_ascii_without_panicking() {
+        assert_eq!(
+            mask_secret("\u{5bc6}\u{94a5}\u{5bc6}\u{94a5}\u{5bc6}\u{94a5}\u{5bc6}\u{94a5}\u{5bc6}\u{94a5}"),
+            Some(format!(
+                "\u{5bc6}\u{94a5}\u{5bc6}\u{94a5}\u{2022}\u{2022}\u{2022}\u{2022}\u{5bc6}\u{94a5}\u{5bc6}\u{94a5}"
+            ))
         );
     }
 
@@ -148,6 +250,9 @@ mod tests {
             openai_api_key: Some("sk-1234567890abcd".to_string()),
             tunnel_id: Some("tun_1".to_string()),
             tunnel_client_path: None,
+            resource_root: Some("/tmp/project".to_string()),
+            mcp_server_port: 17891,
+            log_level: LogLevel::Info,
             auto_start: true,
             auto_update_tunnel_client: true,
         });
@@ -155,7 +260,7 @@ mod tests {
         assert!(public.has_openai_api_key);
         assert_eq!(
             public.openai_api_key_masked,
-            Some("sk-1••••abcd".to_string())
+            Some(format!("sk-1\u{2022}\u{2022}\u{2022}\u{2022}abcd"))
         );
     }
 
@@ -170,15 +275,58 @@ mod tests {
     fn store_saves_and_loads_settings() {
         let dir = tempdir().unwrap();
         let store = SettingsStore::new(dir.path().join("settings.json"));
+
         let settings = TunnelSettings {
             openai_api_key: Some("sk-test".to_string()),
             tunnel_id: Some("tun_test".to_string()),
             tunnel_client_path: Some("/tmp/tunnel-client".to_string()),
+            resource_root: Some("/tmp/project".to_string()),
+            mcp_server_port: 18888,
+            log_level: LogLevel::Debug,
             auto_start: true,
             auto_update_tunnel_client: false,
         };
 
         store.save(settings.clone()).unwrap();
         assert_eq!(store.load().unwrap(), settings);
+    }
+
+    #[test]
+    fn store_preserves_existing_key_when_saved_key_is_blank() {
+        let dir = tempdir().unwrap();
+        let store = SettingsStore::new(dir.path().join("settings.json"));
+
+        store
+            .save(TunnelSettings {
+                openai_api_key: Some("sk-existing".to_string()),
+                tunnel_id: Some("old".to_string()),
+                tunnel_client_path: None,
+                resource_root: None,
+                mcp_server_port: 17891,
+                log_level: LogLevel::Info,
+                auto_start: false,
+                auto_update_tunnel_client: true,
+            })
+            .unwrap();
+
+        let saved = store
+            .save(TunnelSettings {
+                openai_api_key: Some("   ".to_string()),
+                tunnel_id: Some("new".to_string()),
+                tunnel_client_path: Some("   ".to_string()),
+                resource_root: Some(" /tmp/project ".to_string()),
+                mcp_server_port: 0,
+                log_level: LogLevel::Warn,
+                auto_start: true,
+                auto_update_tunnel_client: false,
+            })
+            .unwrap();
+
+        assert_eq!(saved.openai_api_key, Some("sk-existing".to_string()));
+        assert_eq!(saved.tunnel_id, Some("new".to_string()));
+        assert_eq!(saved.tunnel_client_path, None);
+        assert_eq!(saved.resource_root, Some("/tmp/project".to_string()));
+        assert_eq!(saved.mcp_server_port, 17891);
+        assert_eq!(saved.log_level, LogLevel::Warn);
     }
 }

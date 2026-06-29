@@ -9,6 +9,9 @@ const EMPTY_SETTINGS: TunnelSettings = {
   openaiApiKey: "",
   tunnelId: "",
   tunnelClientPath: "",
+  resourceRoot: "",
+  mcpServerPort: 17891,
+  logLevel: "info",
   autoStart: false,
   autoUpdateTunnelClient: true,
 };
@@ -28,6 +31,9 @@ export function SettingsPage() {
           openaiApiKey: "",
           tunnelId: value.tunnelId ?? "",
           tunnelClientPath: value.tunnelClientPath ?? "",
+          resourceRoot: value.resourceRoot ?? "",
+          mcpServerPort: value.mcpServerPort,
+          logLevel: value.logLevel,
           autoStart: value.autoStart,
           autoUpdateTunnelClient: value.autoUpdateTunnelClient,
         });
@@ -53,7 +59,7 @@ export function SettingsPage() {
   return (
     <Page
       title="Settings"
-      description="Configure OpenAI access, tunnel identity and tunnnel-client behavior."
+      description="Configure startup behavior, MCP port, logging, update policy, resource root and tunnel-client behavior."
     >
       <Section>
         <form onSubmit={submit} className="flex flex-col gap-5">
@@ -104,6 +110,62 @@ export function SettingsPage() {
                 }))
               }
             />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">MCP Server Port</span>
+            <input
+              type="number"
+              min={1}
+              max={65535}
+              className="rounded-md border border-border-default bg-background px-3 py-2 text-sm"
+              value={settings.mcpServerPort}
+              onChange={(event) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  mcpServerPort: Number(event.target.value) || 17891,
+                }))
+              }
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Log Level</span>
+            <select
+              className="rounded-md border border-border-default bg-background px-3 py-2 text-sm"
+              value={settings.logLevel}
+              onChange={(event) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  logLevel: event.target.value as TunnelSettings["logLevel"],
+                }))
+              }
+            >
+              <option value="error">error</option>
+              <option value="warn">warn</option>
+              <option value="info">info</option>
+              <option value="debug">debug</option>
+              <option value="trace">trace</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Resource Root</span>
+            <input
+              className="rounded-md border border-border-default bg-background px-3 py-2 text-sm"
+              value={settings.resourceRoot ?? ""}
+              placeholder="/path/to/authorized/root"
+              onChange={(event) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  resourceRoot: event.target.value,
+                }))
+              }
+            />
+            <span className="text-xs text-muted-foreground">
+              Phase 1 stores the intended root only. Later phases must still
+              require explicit resource authorization.
+            </span>
           </label>
 
           <label className="flex items-center gap-2 text-sm">

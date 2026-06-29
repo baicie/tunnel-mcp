@@ -84,6 +84,9 @@ beforeEach(() => {
   tunnelStatuses["getTunnelSettings"].mockResolvedValue({
     tunnelId: "",
     tunnelClientPath: "",
+    resourceRoot: "",
+    mcpServerPort: 17891,
+    logLevel: "info",
     autoStart: false,
     autoUpdateTunnelClient: true,
     hasOpenaiApiKey: false,
@@ -93,10 +96,18 @@ beforeEach(() => {
       Promise.resolve({
         tunnelId: settings.tunnelId ?? "",
         tunnelClientPath: settings.tunnelClientPath ?? "",
+        resourceRoot: settings.resourceRoot ?? "",
+        mcpServerPort:
+          typeof settings.mcpServerPort === "number"
+            ? settings.mcpServerPort
+            : 17891,
+        logLevel: settings.logLevel ?? "info",
         autoStart: settings.autoStart,
         autoUpdateTunnelClient: settings.autoUpdateTunnelClient,
         hasOpenaiApiKey: Boolean(settings.openaiApiKey),
-        openaiApiKeyMasked: settings.openaiApiKey ? "sk-1••••abcd" : undefined,
+        openaiApiKeyMasked: settings.openaiApiKey
+          ? "sk-1\u2022\u2022\u2022\u2022abcd"
+          : undefined,
       }),
   );
   tunnelStatuses["getTunnelStatus"].mockResolvedValue({
@@ -195,6 +206,9 @@ describe("ShellApp", () => {
         openaiApiKey: "",
         tunnelId: "tun_abc",
         tunnelClientPath: "",
+        resourceRoot: "",
+        mcpServerPort: 17891,
+        logLevel: "info",
         autoStart: true,
         autoUpdateTunnelClient: true,
       });

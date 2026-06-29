@@ -44,6 +44,8 @@ pub fn get_tunnel_status(app: AppHandle) -> Result<TunnelStatus, String> {
 }
 
 #[tauri::command]
-pub fn get_mcp_status() -> McpServerStatus {
-    initial_mcp_status()
+pub fn get_mcp_status(app: AppHandle) -> Result<McpServerStatus, String> {
+    let store = SettingsStore::new(settings_path(&app)?);
+    let settings = store.load().map_err(map_error)?;
+    Ok(initial_mcp_status(settings.mcp_server_port))
 }

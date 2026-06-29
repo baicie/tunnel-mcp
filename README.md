@@ -31,14 +31,17 @@ tunnel and only for resources the user has explicitly approved.
 ## Current phase
 
 ```txt
-Phase 0 - template fork and product identity.
-Phase 1 onwards - product modules on top of the shell.
+Phase 0 - template fork and product identity. Done.
+Phase 1 - product information architecture and UI skeleton. Current.
+Phase 2 - tunnel-client sidecar lifecycle. Later.
 ```
 
-Phase 0 ships a clean shell with Dashboard, Settings, and About. No tunnel
-client is downloaded, no MCP server is started, no permission model is wired
-yet. See `docs/agents/issue-tracker.md` and the dev-vault project plan for
-the full roadmap.
+Phase 1 ships the product information architecture on top of the shell:
+Dashboard, Tunnel, MCP Server, Resources, Permissions, Approvals, Audit Logs,
+Settings and About. It exposes typed local status/settings models only.
+
+It still does not download or start tunnel-client, does not start a real MCP
+server, does not grant resource access, and does not implement write approval.
 
 ## Features
 
@@ -66,22 +69,39 @@ the full roadmap.
 
 ## Not in scope for the shell
 
-This shell layer intentionally does not include:
+The shell layer intentionally does not contain product-specific business
+modules such as account systems, cloud backends, prompt editors, plugin
+marketplaces, or analytics dashboards. The reusable shell must stay
+product-neutral; concrete tunnel / mcp behavior is layered on top through the
+product layer.
+
+## Product layer
+
+Product-specific code lives outside the reusable shell layer.
 
 ```txt
-1. tunnel-client download or process management (Phase 2)
-2. local MCP server tools or transport (Phase 3)
-3. resource scopes or permission model (Phase 5)
-4. write approval flow (Phase 5)
-5. audit log UI (Phase 6)
-6. account system, cloud backend, database layer
-7. complex plugin marketplace
-8. arbitrary shell command execution
-9. auto-update release pipeline
+Frontend product paths:
+src/pages/*         product pages
+src/lib/tunnel/*
+src/lib/api/tunnel.ts
+
+Rust product paths:
+src-tauri/src/product/*
+src-tauri/src/commands/tunnel.rs
 ```
 
-Product modules above will be layered on top of the shell without modifying
-it.
+Rules:
+
+```txt
+1. Generic shell components stay product-neutral.
+2. Product commands are listed explicitly in PRODUCT_COMMANDS.
+3. Frontend Tauri invoke calls stay in API adapter modules.
+4. Phase 1 status is modeled data only; no real tunnel-client or MCP runtime
+   starts.
+5. Blank OpenAI Key input preserves the existing saved key.
+6. Resource root is configuration only; it does not authorize resource
+   access.
+```
 
 ## Quick Start
 
@@ -322,8 +342,8 @@ opencode
 hermes
 ```
 
-Product modules will live under product-layer paths and be added in later
-phases.
+Product modules live under product-layer paths and are layered on top of
+this shell.
 
 Run:
 
