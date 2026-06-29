@@ -1,7 +1,7 @@
 # Issue Tracker: GitHub
 
 Issues and PRDs for this repo live as GitHub issues in
-`baicie/tauri-template`. Use the `gh` CLI for issue operations when it is
+`baicie/tunnel-mcp`. Use the `gh` CLI for issue operations when it is
 available.
 
 ## Conventions
