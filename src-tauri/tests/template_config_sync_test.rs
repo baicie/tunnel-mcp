@@ -1,4 +1,4 @@
-use desktop_shell::shell::brand::APP_BRAND;
+use tunnel_mcp::shell::brand::APP_BRAND;
 use std::fs;
 use std::path::PathBuf;
 
