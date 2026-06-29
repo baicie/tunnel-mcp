@@ -1,4 +1,4 @@
-use desktop_shell::shell::runtime_boundary::SHELL_FORBIDDEN_MARKERS;
+use tunnel_mcp::shell::runtime_boundary::SHELL_FORBIDDEN_MARKERS;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -37,7 +37,14 @@ fn src_tauri_src_should_not_contain_legacy_business_markers() {
 
     walk(&root, &mut files);
 
-    let allow_list = ["src/shell/runtime_boundary.rs"];
+    let allow_list = [
+        "src/shell/runtime_boundary.rs",
+        // Product identity is generated from template.config.ts and may
+        // legitimately contain words that are otherwise forbidden from
+        // shell runtime implementation modules, for example `mcp` in
+        // the Tunnel MCP product name.
+        "src/shell/brand.rs",
+    ];
 
     let mut violations = Vec::new();
 
