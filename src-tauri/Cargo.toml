@@ -1,0 +1,57 @@
+[package]
+name = "desktop-shell"
+version = "0.1.0"
+description = "A minimal Tauri React desktop shell."
+authors = ["baicie"]
+license = "MIT"
+edition = "2021"
+rust-version = "1.85.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "desktop_shell"
+crate-type = ["staticlib", "cdylib", "rlib"]
+doctest = false
+
+# The bin target keeps `src/main.rs` for Tauri's default entrypoint,
+# but is given an explicit name so its artifact (`shell.exe` /
+# `shell.pdb`) does not collide with the lib target's `desktop_shell`
+# artifact on case-insensitive filesystems like Windows NTFS and
+# macOS APFS by default.
+[[bin]]
+name = "shell"
+path = "src/main.rs"
+
+[features]
+default = []
+test-hooks = []
+
+[build-dependencies]
+tauri-build = { version = "2.6", features = [] }
+
+[dependencies]
+serde_json = "1"
+serde = "1"
+tauri = { version = "2.11", features = ["protocol-asset", "image-png"] }
+tauri-plugin-log = "2.8"
+tauri-plugin-opener = "2.5"
+tauri-plugin-process = "2.3"
+tauri-plugin-updater = "2.10"
+tauri-plugin-dialog = "2.7"
+tauri-plugin-store = "2.4"
+tauri-plugin-window-state = "2.4"
+url = "2.5"
+
+# Optimize release binary size to help reduce AppImage footprint
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = "s"
+# Use `unwind` so the panic hook can capture the backtrace; `abort`
+# terminates immediately without giving the hook a chance to run.
+panic = "unwind"
+strip = "symbols"
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,0 +1,33 @@
+name: "Question"
+description: Ask a question about usage or configuration.
+labels:
+  - question
+body:
+  - type: checkboxes
+    attributes:
+      label: Self Checks
+      options:
+        - label: I have searched for existing issues, including closed ones.
+          required: true
+
+  - type: textarea
+    attributes:
+      label: Your Question
+      description: Describe your question clearly.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: What Have You Tried
+      description: Describe what you've already tried or researched.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Environment
+      description: OS, app version, and any relevant details.
+      placeholder: "e.g. macOS 15.4, 0.1.0"
+    validations:
+      required: false

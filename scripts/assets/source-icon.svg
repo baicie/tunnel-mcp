@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Source icon for the desktop shell template.
+
+  This SVG is the single source of truth. Run `pnpm icons:generate`
+  to rasterize it to every PNG / icns / ico size the Tauri bundler expects.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="tile-shadow" x="-12%" y="-10%" width="124%" height="128%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#000000" flood-opacity="0.18"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="1.25" flood-color="#000000" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="tile" x1="54" y1="28" x2="205" y2="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.62" stop-color="#fbfbfb"/>
+      <stop offset="1" stop-color="#ededed"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" fill="none"/>
+  <rect x="18" y="18" width="220" height="220" rx="48" fill="url(#tile)" filter="url(#tile-shadow)"/>
+  <rect x="18.5" y="18.5" width="219" height="219" rx="47.5" fill="none" stroke="#ffffff" stroke-opacity="0.75"/>
+
+  <g transform="translate(38 28) scale(1.47)">
+    <path
+      d="M84.92 49.51A12.91 12.91 0 0 1 71.98 62.4a12.91 12.91 0 0 1-12.95-12.89 12.91 12.91 0 0 1 12.95-12.88A12.91 12.91 0 0 1 84.92 49.5Z"
+      fill="#050505"
+    />
+    <path
+      d="M63.23 85.73a12.91 12.91 0 0 1-12.94 12.88 12.91 12.91 0 0 1-12.95-12.88 12.91 12.91 0 0 1 12.95-12.89 12.91 12.91 0 0 1 12.94 12.9Z"
+      fill="#050505"
+    />
+    <path
+      d="M40.41 38C18.07 42.55 1.26 62.23 1.26 85.8c0 26.93 21.95 48.75 49.03 48.75 21.5 0 40.1-13.81 46.8-33.99a56.92 56.92 0 0 1-18.75 5.47A34.48 34.48 0 0 1 50.3 120.4a34.4 34.4 0 0 1-34.5-34.3A34.34 34.34 0 0 1 38.43 53.9 34.26 34.26 0 0 1 40.42 38Z"
+      fill="#050505"
+    />
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M81.84 97.64c22.34-4.55 39.15-24.24 39.15-47.8 0-26.93-21.95-48.76-49.03-48.76-21.5 0-40.1 13.82-46.8 34a56.91 56.91 0 0 1 18.75-5.47A34.48 34.48 0 0 1 71.96 15.2a34.4 34.4 0 0 1 34.5 34.3A34.34 34.34 0 0 1 83.83 81.73a34.26 34.26 0 0 1-1.99 15.9Z"
+      fill="#050505"
+    />
+  </g>
+</svg>

@@ -1,0 +1,37 @@
+name: "Documentation Issue"
+description: Report documentation errors, outdated content, or missing information.
+labels:
+  - documentation
+body:
+  - type: checkboxes
+    attributes:
+      label: Self Checks
+      options:
+        - label: I have searched for existing issues, including closed ones.
+          required: true
+
+  - type: input
+    attributes:
+      label: Document Location
+      description: Which file or section is affected? Provide a link or file path.
+      placeholder: "e.g. README.md#quick-start or docs/template-guide.md"
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Issue Type
+      options:
+        - Typo or grammar
+        - Outdated content
+        - Missing information
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Description
+      description: Describe the documentation issue.
+    validations:
+      required: true
