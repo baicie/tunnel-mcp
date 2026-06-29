@@ -6,19 +6,23 @@ export const requiredDocs = [
   {
     path: "README.md",
     requiredSections: [
-      "# Desktop Shell Template",
+      "# Tunnel MCP",
       "## What is this",
+      "## Current phase",
       "## Features",
+      "## Not in scope for the shell",
       "## Quick Start",
-      "## Rename Your App",
+      "## Identity",
       "## Project Structure",
       "## Add a Page",
-      "## Add a Shell Command",
       "## Add a Setting",
+      "## Add a Shell Command",
       "## Build",
       "## Release",
-      "## Template Boundary",
+      "## Shell Boundary",
       "## Checks",
+      "## Documentation",
+      "## License",
     ],
   },
   {
@@ -80,6 +84,17 @@ export const requiredDocs = [
       "## CI",
       "## When a check fails",
     ],
+  },
+  {
+    path: "docs/agents/issue-tracker.md",
+    requiredSections: [
+      "# Issue Tracker: GitHub",
+      "`baicie/tunnel-mcp`",
+      "## Conventions",
+      '## When A Skill Says "Publish To The Issue Tracker"',
+      '## When A Skill Says "Fetch The Relevant Ticket"',
+    ],
+    forbiddenSnippets: ["`baicie/tauri-template`"],
   },
 ];
 
