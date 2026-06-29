@@ -1,6 +1,6 @@
 # Checks
 
-This document explains all checks used by Desktop Shell Template.
+This document explains the verification commands used by Tunnel MCP after the Phase 0 fork.
 
 ## App checks
 
@@ -9,10 +9,8 @@ These are the default checks for apps created from this template.
 Run:
 
 ```bash
-pnpm check:all
+pnpm check:app
 ```
-
-`check:all` is an alias of `pnpm check:app`.
 
 It includes:
 
@@ -29,10 +27,10 @@ It includes:
 10. cargo library tests
 ```
 
-It intentionally does not include template-maintenance checks such as docs
-shape, forbidden product dependencies, legacy frontend file guards, or
-product-neutral shell vocabulary guards. Those are useful for maintaining this
-template repository, but they should not block a product app created from the
+It intentionally does not include template-maintenance checks such as docs shape,
+forbidden product dependencies, legacy frontend file guards, or product-neutral
+shell vocabulary guards. Those are useful for maintaining the shell/template
+layer, but they should not block a downstream product app created from the
 template.
 
 ### Frontend only
@@ -49,7 +47,7 @@ pnpm check:app:rust
 
 ## Template checks
 
-These are strict checks for maintaining Desktop Shell Template itself.
+These are strict checks for maintaining the Phase 0 shell/template layer.
 
 Run:
 
@@ -93,6 +91,15 @@ pnpm check:template:rust
 ```bash
 node scripts/check-template.mjs --list
 ```
+
+### All checks
+
+```bash
+pnpm check:all
+```
+
+`check:all` runs both `pnpm check:template` and `pnpm check:app` for this
+repository. Use it before merging Phase 0 shell/template changes.
 
 ## Frontend typecheck
 
@@ -148,7 +155,7 @@ Ensures:
 pnpm check:shell-boundary
 ```
 
-Ensures frontend shell does not contain legacy concepts such as:
+Ensures frontend shell code does not contain legacy concepts such as:
 
 ```txt
 provider
@@ -227,7 +234,7 @@ zstd
 pnpm check:docs
 ```
 
-Ensures required docs exist and contain required sections.
+Ensures required docs exist and contain required Phase 0 sections.
 
 ## Icon sync check
 
@@ -288,9 +295,10 @@ pnpm check:app:frontend
 pnpm check:app:rust
 ```
 
-Local full verification for apps should use `pnpm check:all`.
+Local full verification for this repository should use `pnpm check:all`.
+Downstream product apps can use `pnpm check:app`.
 
-This repository also has a separate template-maintenance workflow that runs:
+This repository may also run the stricter template-maintenance commands:
 
 ```bash
 pnpm check:template:frontend
@@ -319,7 +327,8 @@ instead of string literals.
 
 ### Shell boundary violation
 
-Remove product-specific concepts from the template.
+Remove product-specific concepts from the shell layer or move them to a later
+product phase with an explicit boundary update.
 
 ### Dependency violation
 
