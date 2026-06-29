@@ -32,6 +32,7 @@ const tunnelStatuses = vi.hoisted(() => {
   out["startTunnelClient"] = vi.fn();
   out["stopTunnelClient"] = vi.fn();
   out["restartTunnelClient"] = vi.fn();
+  out["getTunnelClientLogs"] = vi.fn();
   return out;
 });
 
@@ -65,6 +66,7 @@ vi.mock("../lib/api/tunnel", () => {
   tunnel["startTunnelClient"] = tunnelStatuses["startTunnelClient"];
   tunnel["stopTunnelClient"] = tunnelStatuses["stopTunnelClient"];
   tunnel["restartTunnelClient"] = tunnelStatuses["restartTunnelClient"];
+  tunnel["getTunnelClientLogs"] = tunnelStatuses["getTunnelClientLogs"];
   return tunnel;
 });
 
@@ -93,6 +95,7 @@ beforeEach(() => {
   tunnelStatuses["getTunnelSettings"].mockResolvedValue({
     tunnelId: "",
     tunnelClientPath: "",
+    tunnelClientVersion: undefined,
     resourceRoot: "",
     mcpServerPort: 17891,
     logLevel: "info",
@@ -105,6 +108,7 @@ beforeEach(() => {
       Promise.resolve({
         tunnelId: settings.tunnelId ?? "",
         tunnelClientPath: settings.tunnelClientPath ?? "",
+        tunnelClientVersion: settings.tunnelClientVersion,
         resourceRoot: settings.resourceRoot ?? "",
         mcpServerPort:
           typeof settings.mcpServerPort === "number"
@@ -122,22 +126,33 @@ beforeEach(() => {
   tunnelStatuses["getTunnelStatus"].mockResolvedValue({
     installed: false,
     running: false,
+    health: "unknown",
+    localMcpPortOpen: false,
   });
+  tunnelStatuses["getTunnelClientLogs"].mockResolvedValue([]);
   tunnelStatuses["installTunnelClient"].mockResolvedValue({
     installed: true,
     running: false,
+    health: "unknown",
+    localMcpPortOpen: false,
   });
   tunnelStatuses["startTunnelClient"].mockResolvedValue({
     installed: true,
     running: true,
+    health: "warning",
+    localMcpPortOpen: false,
   });
   tunnelStatuses["stopTunnelClient"].mockResolvedValue({
     installed: true,
     running: false,
+    health: "unknown",
+    localMcpPortOpen: false,
   });
   tunnelStatuses["restartTunnelClient"].mockResolvedValue({
     installed: true,
     running: true,
+    health: "warning",
+    localMcpPortOpen: false,
   });
   const serverKey = ["get", ["M", "c", "p"].join("") + "Status"].join("");
   tunnelStatuses[serverKey].mockResolvedValue({
@@ -231,6 +246,7 @@ describe("ShellApp", () => {
         openaiApiKey: "",
         tunnelId: "tun_abc",
         tunnelClientPath: "",
+        tunnelClientVersion: undefined,
         resourceRoot: "",
         mcpServerPort: 17891,
         logLevel: "info",

@@ -1,9 +1,12 @@
 export type LogLevel = "error" | "warn" | "info" | "debug" | "trace";
 
+export type TunnelHealthState = "unknown" | "healthy" | "warning" | "unhealthy";
+
 export type TunnelSettings = {
   openaiApiKey?: string;
   tunnelId?: string;
   tunnelClientPath?: string;
+  tunnelClientVersion?: string;
   resourceRoot?: string;
   mcpServerPort: number;
   logLevel: LogLevel;
@@ -22,6 +25,8 @@ export type TunnelStatus = {
   version?: string;
   pid?: number;
   endpoint?: string;
+  health: TunnelHealthState;
+  localMcpPortOpen: boolean;
   lastError?: string;
 };
 
@@ -30,6 +35,11 @@ export type McpServerStatus = {
   port: number;
   tools: string[];
   resources: string[];
+};
+
+export type TunnelClientLogLine = {
+  stream: string;
+  line: string;
 };
 
 export type PermissionScope = {

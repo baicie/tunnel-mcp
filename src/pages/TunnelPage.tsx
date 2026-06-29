@@ -4,13 +4,14 @@ import { Input } from "../components/ui/input";
 import { Page } from "../components/layout/Page";
 import { Section } from "../components/layout/Section";
 import {
+  getTunnelClientLogs,
   getTunnelStatus,
   installTunnelClient,
   restartTunnelClient,
   startTunnelClient,
   stopTunnelClient,
 } from "../lib/api/tunnel";
-import type { TunnelStatus } from "../lib/tunnel/types";
+import type { TunnelClientLogLine, TunnelStatus } from "../lib/tunnel/types";
 
 const DEFAULT_MANIFEST_URL =
   "https://github.com/baicie/tunnel-client/releases/latest/download/manifest.json";
@@ -18,12 +19,17 @@ const DEFAULT_MANIFEST_URL =
 export function TunnelPage() {
   const [status, setStatus] = useState<TunnelStatus | null>(null);
   const [manifestUrl, setManifestUrl] = useState(DEFAULT_MANIFEST_URL);
+  const [logs, setLogs] = useState<TunnelClientLogLine[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
-    const next = await getTunnelStatus();
-    setStatus(next);
+    const [nextStatus, nextLogs] = await Promise.all([
+      getTunnelStatus(),
+      getTunnelClientLogs(),
+    ]);
+    setStatus(nextStatus);
+    setLogs(nextLogs);
   }
 
   async function run(action: () => Promise<TunnelStatus>) {
@@ -32,6 +38,7 @@ export function TunnelPage() {
     try {
       const next = await action();
       setStatus(next);
+      setLogs(await getTunnelClientLogs());
     } catch (err) {
       setError(String(err));
     } finally {
@@ -46,7 +53,7 @@ export function TunnelPage() {
   return (
     <Page
       title="Tunnel"
-      description="Install, start, stop and restart the local tunnel-client. Phase 2 only manages the binary lifecycle."
+      description="Install, start, stop and restart the local tunnel-client. Phase 2 manages the binary lifecycle and exposes recent logs."
     >
       <Section title="Tunnel Status">
         <dl className="grid gap-2 text-sm">
@@ -65,6 +72,16 @@ export function TunnelPage() {
           <div>
             <dt className="font-medium">PID</dt>
             <dd>{status?.pid ?? "-"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium">Health</dt>
+            <dd>{status?.health ?? "unknown"}</dd>
+          </div>
+          <div>
+            <dt className="font-medium">Local MCP Port</dt>
+            <dd>
+              {status?.localMcpPortOpen ? "Open / occupied" : "Not reachable"}
+            </dd>
           </div>
           {status?.endpoint ? (
             <div>
@@ -126,6 +143,16 @@ export function TunnelPage() {
             {error}
           </p>
         ) : null}
+      </Section>
+
+      <Section title="Recent tunnel-client logs">
+        {logs.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No logs captured yet.</p>
+        ) : (
+          <pre className="max-h-64 overflow-auto rounded-md border border-border-default bg-background px-3 py-2 text-xs">
+            {logs.map((entry) => `[${entry.stream}] ${entry.line}`).join("\n")}
+          </pre>
+        )}
       </Section>
     </Page>
   );

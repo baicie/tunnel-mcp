@@ -32,16 +32,19 @@ tunnel and only for resources the user has explicitly approved.
 
 ```txt
 Phase 0 - template fork and product identity. Done.
-Phase 1 - product information architecture and UI skeleton. Current.
-Phase 2 - tunnel-client sidecar lifecycle. Later.
+Phase 1 - product information architecture and UI skeleton. Done.
+Phase 2 - tunnel-client sidecar lifecycle. Current.
+Phase 3 - embedded local MCP server MVP. Later.
 ```
 
-Phase 1 ships the product information architecture on top of the shell:
-Dashboard, Tunnel, MCP Server, Resources, Permissions, Approvals, Audit Logs,
-Settings and About. It exposes typed local status/settings models only.
+Phase 2 adds managed tunnel-client installation and lifecycle controls:
+manifest download, platform asset selection, sha256 verification, local
+versioned install directory, start/stop/restart commands, process status,
+health hints and recent tunnel-client logs.
 
-It still does not download or start tunnel-client, does not start a real MCP
-server, does not grant resource access, and does not implement write approval.
+Phase 2 still does not start a real embedded MCP server, does not expose local
+resources, does not bind a remote connector, and does not implement write
+approval.
 
 ## Features
 
@@ -96,11 +99,10 @@ Rules:
 1. Generic shell components stay product-neutral.
 2. Product commands are listed explicitly in PRODUCT_COMMANDS.
 3. Frontend Tauri invoke calls stay in API adapter modules.
-4. Phase 1 status is modeled data only; no real tunnel-client or MCP runtime
-   starts.
-5. Blank OpenAI Key input preserves the existing saved key.
-6. Resource root is configuration only; it does not authorize resource
-   access.
+4. Phase 2 manages the tunnel-client sidecar lifecycle only.
+5. The OpenAI key must not be exposed through public settings or command-line arguments.
+6. Resource root is configuration only; it does not authorize resource access.
+7. Local MCP server startup belongs to Phase 3.
 ```
 
 ## Quick Start

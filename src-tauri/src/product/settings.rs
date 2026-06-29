@@ -21,6 +21,7 @@ pub struct TunnelSettings {
     pub openai_api_key: Option<String>,
     pub tunnel_id: Option<String>,
     pub tunnel_client_path: Option<String>,
+    pub tunnel_client_version: Option<String>,
     pub resource_root: Option<String>,
     pub mcp_server_port: u16,
     pub log_level: LogLevel,
@@ -34,6 +35,7 @@ impl Default for TunnelSettings {
             openai_api_key: None,
             tunnel_id: None,
             tunnel_client_path: None,
+            tunnel_client_version: None,
             resource_root: None,
             mcp_server_port: DEFAULT_MCP_SERVER_PORT,
             log_level: LogLevel::Info,
@@ -48,6 +50,7 @@ impl Default for TunnelSettings {
 pub struct PublicTunnelSettings {
     pub tunnel_id: Option<String>,
     pub tunnel_client_path: Option<String>,
+    pub tunnel_client_version: Option<String>,
     pub resource_root: Option<String>,
     pub mcp_server_port: u16,
     pub log_level: LogLevel,
@@ -159,6 +162,7 @@ fn normalize_loaded_settings(settings: TunnelSettings) -> TunnelSettings {
         openai_api_key: normalize_optional_string(settings.openai_api_key),
         tunnel_id: normalize_optional_string(settings.tunnel_id),
         tunnel_client_path: normalize_optional_string(settings.tunnel_client_path),
+        tunnel_client_version: normalize_optional_string(settings.tunnel_client_version),
         resource_root: normalize_optional_string(settings.resource_root),
         mcp_server_port: normalize_port(settings.mcp_server_port),
         log_level: settings.log_level,
@@ -188,6 +192,7 @@ pub fn to_public_settings(settings: TunnelSettings) -> PublicTunnelSettings {
     PublicTunnelSettings {
         tunnel_id: normalized.tunnel_id,
         tunnel_client_path: normalized.tunnel_client_path,
+        tunnel_client_version: normalized.tunnel_client_version,
         resource_root: normalized.resource_root,
         mcp_server_port: normalized.mcp_server_port,
         log_level: normalized.log_level,
@@ -250,6 +255,7 @@ mod tests {
             openai_api_key: Some("sk-1234567890abcd".to_string()),
             tunnel_id: Some("tun_1".to_string()),
             tunnel_client_path: None,
+            tunnel_client_version: None,
             resource_root: Some("/tmp/project".to_string()),
             mcp_server_port: 17891,
             log_level: LogLevel::Info,
@@ -280,6 +286,7 @@ mod tests {
             openai_api_key: Some("sk-test".to_string()),
             tunnel_id: Some("tun_test".to_string()),
             tunnel_client_path: Some("/tmp/tunnel-client".to_string()),
+            tunnel_client_version: Some("0.2.0".to_string()),
             resource_root: Some("/tmp/project".to_string()),
             mcp_server_port: 18888,
             log_level: LogLevel::Debug,
@@ -301,6 +308,7 @@ mod tests {
                 openai_api_key: Some("sk-existing".to_string()),
                 tunnel_id: Some("old".to_string()),
                 tunnel_client_path: None,
+                tunnel_client_version: None,
                 resource_root: None,
                 mcp_server_port: 17891,
                 log_level: LogLevel::Info,
@@ -314,6 +322,7 @@ mod tests {
                 openai_api_key: Some("   ".to_string()),
                 tunnel_id: Some("new".to_string()),
                 tunnel_client_path: Some("   ".to_string()),
+                tunnel_client_version: Some("   ".to_string()),
                 resource_root: Some(" /tmp/project ".to_string()),
                 mcp_server_port: 0,
                 log_level: LogLevel::Warn,
@@ -325,6 +334,7 @@ mod tests {
         assert_eq!(saved.openai_api_key, Some("sk-existing".to_string()));
         assert_eq!(saved.tunnel_id, Some("new".to_string()));
         assert_eq!(saved.tunnel_client_path, None);
+        assert_eq!(saved.tunnel_client_version, None);
         assert_eq!(saved.resource_root, Some("/tmp/project".to_string()));
         assert_eq!(saved.mcp_server_port, 17891);
         assert_eq!(saved.log_level, LogLevel::Warn);

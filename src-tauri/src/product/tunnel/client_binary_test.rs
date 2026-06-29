@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use super::super::client_binary::{select_asset, TunnelClientAsset, TunnelClientManifest};
+    use crate::product::tunnel::client_binary::{
+        select_asset, TunnelClientAsset, TunnelClientManifest,
+    };
 
     #[test]
     fn select_asset_returns_none_when_platform_not_found() {

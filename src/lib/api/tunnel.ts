@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   McpServerStatus,
   PublicTunnelSettings,
+  TunnelClientLogLine,
   TunnelSettings,
   TunnelStatus,
 } from "../tunnel/types";
@@ -45,4 +46,8 @@ export async function stopTunnelClient(): Promise<TunnelStatus> {
 
 export async function restartTunnelClient(): Promise<TunnelStatus> {
   return invoke("restart_tunnel_client");
+}
+
+export async function getTunnelClientLogs(): Promise<TunnelClientLogLine[]> {
+  return invoke("get_tunnel_client_logs");
 }

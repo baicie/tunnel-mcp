@@ -42,6 +42,7 @@ pub fn run() {
             commands::tunnel_process::start_tunnel_client,
             commands::tunnel_process::stop_tunnel_client,
             commands::tunnel_process::restart_tunnel_client,
+            commands::tunnel_process::get_tunnel_client_logs,
         ])
         .setup(|app| {
             shell::runtime_boundary::assert_runtime_boundary(

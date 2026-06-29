@@ -9,6 +9,7 @@ const EMPTY_SETTINGS: TunnelSettings = {
   openaiApiKey: "",
   tunnelId: "",
   tunnelClientPath: "",
+  tunnelClientVersion: undefined,
   resourceRoot: "",
   mcpServerPort: 17891,
   logLevel: "info",
@@ -31,6 +32,7 @@ export function SettingsPage() {
           openaiApiKey: "",
           tunnelId: value.tunnelId ?? "",
           tunnelClientPath: value.tunnelClientPath ?? "",
+          tunnelClientVersion: value.tunnelClientVersion,
           resourceRoot: value.resourceRoot ?? "",
           mcpServerPort: value.mcpServerPort,
           logLevel: value.logLevel,
@@ -48,7 +50,11 @@ export function SettingsPage() {
     try {
       const saved = await saveTunnelSettings(settings);
       setPublicSettings(saved);
-      setSettings((prev) => ({ ...prev, openaiApiKey: "" }));
+      setSettings((prev) => ({
+        ...prev,
+        openaiApiKey: "",
+        tunnelClientVersion: saved.tunnelClientVersion,
+      }));
     } catch (err) {
       setError(String(err));
     } finally {

@@ -1,6 +1,15 @@
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum TunnelHealthState {
+    Unknown,
+    Healthy,
+    Warning,
+    Unhealthy,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct TunnelStatus {
     pub installed: bool,
@@ -8,6 +17,8 @@ pub struct TunnelStatus {
     pub version: Option<String>,
     pub pid: Option<u32>,
     pub endpoint: Option<String>,
+    pub health: TunnelHealthState,
+    pub local_mcp_port_open: bool,
     pub last_error: Option<String>,
 }
 
@@ -20,13 +31,19 @@ pub struct McpServerStatus {
     pub resources: Vec<String>,
 }
 
-pub fn initial_tunnel_status(tunnel_client_path: Option<String>) -> TunnelStatus {
+pub fn initial_tunnel_status(
+    tunnel_client_path: Option<String>,
+    version: Option<String>,
+    local_mcp_port_open: bool,
+) -> TunnelStatus {
     TunnelStatus {
         installed: tunnel_client_path.is_some_and(|value| !value.trim().is_empty()),
         running: false,
-        version: None,
+        version,
         pid: None,
         endpoint: None,
+        health: TunnelHealthState::Unknown,
+        local_mcp_port_open,
         last_error: None,
     }
 }
@@ -42,18 +59,26 @@ pub fn initial_mcp_status(port: u16) -> McpServerStatus {
 
 #[cfg(test)]
 mod tests {
-    use super::{initial_mcp_status, initial_tunnel_status};
+    use super::{initial_mcp_status, initial_tunnel_status, TunnelHealthState};
 
     #[test]
     fn tunnel_status_treats_missing_or_blank_path_as_not_installed() {
-        assert!(!initial_tunnel_status(None).installed);
-        assert!(!initial_tunnel_status(Some(String::new())).installed);
-        assert!(!initial_tunnel_status(Some("   ".to_string())).installed);
+        assert!(!initial_tunnel_status(None, None, false).installed);
+        assert!(!initial_tunnel_status(Some(String::new()), None, false).installed);
+        assert!(!initial_tunnel_status(Some("   ".to_string()), None, false).installed);
     }
 
     #[test]
-    fn tunnel_status_treats_non_blank_path_as_installed() {
-        assert!(initial_tunnel_status(Some("/tmp/tunnel-client".to_string())).installed);
+    fn tunnel_status_keeps_installed_version() {
+        let status = initial_tunnel_status(
+            Some("/tmp/tunnel-client".to_string()),
+            Some("0.2.0".to_string()),
+            false,
+        );
+
+        assert!(status.installed);
+        assert_eq!(status.version, Some("0.2.0".to_string()));
+        assert_eq!(status.health, TunnelHealthState::Unknown);
     }
 
     #[test]

@@ -1,11 +1,10 @@
 use crate::product::settings::{
     to_public_settings, PublicTunnelSettings, SettingsError, SettingsStore, TunnelSettings,
 };
-use crate::product::status::{
-    initial_mcp_status, initial_tunnel_status, McpServerStatus, TunnelStatus,
-};
+use crate::product::status::{initial_mcp_status, McpServerStatus, TunnelStatus};
+use crate::product::tunnel::client_process::TunnelProcessManager;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
 
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     app.path()
@@ -37,10 +36,13 @@ pub fn save_tunnel_settings(
 }
 
 #[tauri::command]
-pub fn get_tunnel_status(app: AppHandle) -> Result<TunnelStatus, String> {
+pub fn get_tunnel_status(
+    app: AppHandle,
+    manager: State<TunnelProcessManager>,
+) -> Result<TunnelStatus, String> {
     let store = SettingsStore::new(settings_path(&app)?);
     let settings = store.load().map_err(map_error)?;
-    Ok(initial_tunnel_status(settings.tunnel_client_path))
+    manager.status(&settings).map_err(|err| err.to_string())
 }
 
 #[tauri::command]

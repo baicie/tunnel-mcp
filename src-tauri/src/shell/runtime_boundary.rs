@@ -53,6 +53,7 @@ pub const PRODUCT_COMMANDS: &[&str] = &[
     "start_tunnel_client",
     "stop_tunnel_client",
     "restart_tunnel_client",
+    "get_tunnel_client_logs",
 ];
 
 /// Combined command surface exposed by `lib.rs`. The runtime bootstrap

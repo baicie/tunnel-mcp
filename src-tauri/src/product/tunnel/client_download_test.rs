@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use super::super::client_download::verify_sha256;
+    use crate::product::tunnel::client_download::verify_sha256;
 
     #[test]
     fn verify_sha256_accepts_matching_hash() {
