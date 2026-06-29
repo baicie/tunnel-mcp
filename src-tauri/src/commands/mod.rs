@@ -1,4 +1,5 @@
 pub mod app;
+pub mod mcp;
 pub mod settings;
 pub mod shell;
 

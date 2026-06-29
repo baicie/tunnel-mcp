@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import { Page } from "../components/layout/Page";
 import { Section } from "../components/layout/Section";
-import {
-  getMcpStatus,
-  getTunnelSettings,
-  getTunnelStatus,
-} from "../lib/api/tunnel";
+import { getMcpStatus } from "../lib/api/mcp";
+import { getTunnelSettings, getTunnelStatus } from "../lib/api/tunnel";
 import type {
   McpServerStatus,
   PublicTunnelSettings,

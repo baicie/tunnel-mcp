@@ -33,18 +33,20 @@ tunnel and only for resources the user has explicitly approved.
 ```txt
 Phase 0 - template fork and product identity. Done.
 Phase 1 - product information architecture and UI skeleton. Done.
-Phase 2 - tunnel-client sidecar lifecycle. Current.
-Phase 3 - embedded local MCP server MVP. Later.
+Phase 2 - tunnel-client sidecar lifecycle. Done.
+Phase 3 - embedded local MCP server MVP. Current.
+Phase 4+ - approvals, write tools, audit persistence, updater. Later.
 ```
 
-Phase 2 adds managed tunnel-client installation and lifecycle controls:
-manifest download, platform asset selection, sha256 verification, local
-versioned install directory, start/stop/restart commands, process status,
-health hints and recent tunnel-client logs.
+Phase 3 ships the embedded local MCP server MVP. It binds
+`127.0.0.1:17891` by default, serves a minimal JSON-RPC over HTTP
+endpoint at `/mcp`, and exposes read-only tools
+(`resources/list`, `resources/read`, `files/list`, `files/read`)
+guarded by an `AllowRootsReadPolicy` rooted at the user's
+`~/Documents` directory.
 
-Phase 2 still does not start a real embedded MCP server, does not expose local
-resources, does not bind a remote connector, and does not implement write
-approval.
+Phase 3 still does not implement write tools, command execution,
+remote connector binding, persistent audit log, or write approval.
 
 ## Features
 
@@ -102,7 +104,10 @@ Rules:
 4. Phase 2 manages the tunnel-client sidecar lifecycle only.
 5. The OpenAI key must not be exposed through public settings or command-line arguments.
 6. Resource root is configuration only; it does not authorize resource access.
-7. Local MCP server startup belongs to Phase 3.
+7. Phase 3 exposes read-only MCP tools only; write tools and command
+   execution are out of scope.
+8. Every MCP file operation must traverse `AllowRootsReadPolicy` so
+   unauthenticated paths return `permission denied`.
 ```
 
 ## Quick Start

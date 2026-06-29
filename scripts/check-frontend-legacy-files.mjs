@@ -25,7 +25,6 @@ const forbiddenPaths = [
   "src/lib/api/global-proxy.ts",
   "src/lib/api/importExport.ts",
   "src/lib/api/import-export.ts",
-  "src/lib/api/mcp.ts",
   "src/lib/api/model-fetch.ts",
   "src/lib/api/model-test.ts",
   "src/lib/api/models.ts",
@@ -102,6 +101,7 @@ const allowedExactPaths = new Set([
   "src/lib/api/shell.ts",
   "src/lib/api/shell.test.ts",
   "src/lib/api/tunnel.ts",
+  "src/lib/api/mcp.ts",
   "src/lib/query/queryClient.ts",
   "src/lib/query/queryKeys.ts",
 ]);

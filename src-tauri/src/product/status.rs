@@ -48,6 +48,7 @@ pub fn initial_tunnel_status(
     }
 }
 
+#[allow(dead_code)]
 pub fn initial_mcp_status(port: u16) -> McpServerStatus {
     McpServerStatus {
         running: false,

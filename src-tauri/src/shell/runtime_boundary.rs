@@ -48,6 +48,8 @@ pub const PRODUCT_COMMANDS: &[&str] = &[
     "get_tunnel_settings",
     "save_tunnel_settings",
     "get_tunnel_status",
+    "start_mcp_server",
+    "stop_mcp_server",
     "get_mcp_status",
     "install_tunnel_client",
     "start_tunnel_client",

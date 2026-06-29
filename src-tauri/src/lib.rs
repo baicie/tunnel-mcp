@@ -27,6 +27,7 @@ pub fn run() {
     let builder = shell::updater::plugin(builder);
 
     builder
+        .manage(product::mcp::server::McpServerManager::new(17891))
         .manage(product::tunnel::client_process::TunnelProcessManager::default())
         .invoke_handler(tauri::generate_handler![
             commands::app::get_app_info,
@@ -37,7 +38,9 @@ pub fn run() {
             commands::tunnel::get_tunnel_settings,
             commands::tunnel::save_tunnel_settings,
             commands::tunnel::get_tunnel_status,
-            commands::tunnel::get_mcp_status,
+            commands::mcp::start_mcp_server,
+            commands::mcp::stop_mcp_server,
+            commands::mcp::get_mcp_status,
             commands::tunnel_process::install_tunnel_client,
             commands::tunnel_process::start_tunnel_client,
             commands::tunnel_process::stop_tunnel_client,
