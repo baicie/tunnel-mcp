@@ -1,4 +1,4 @@
-use desktop_shell::shell::runtime_boundary::SHELL_ALLOWED_COMMANDS;
+use tunnel_mcp::shell::runtime_boundary::SHELL_ALLOWED_COMMANDS;
 use std::fs;
 use std::path::PathBuf;
 
