@@ -5,6 +5,7 @@ describe("maskSecret", () => {
   it("returns undefined for empty secret", () => {
     expect(maskSecret()).toBeUndefined();
     expect(maskSecret("")).toBeUndefined();
+    expect(maskSecret("   ")).toBeUndefined();
   });
 
   it("masks short secret", () => {
@@ -13,5 +14,9 @@ describe("maskSecret", () => {
 
   it("keeps prefix and suffix for long secret", () => {
     expect(maskSecret("sk-1234567890abcd")).toBe("sk-1••••abcd");
+  });
+
+  it("does not split unicode code points", () => {
+    expect(maskSecret("密钥一二三四五六七八九十")).toBe("密钥一二••••七八九十");
   });
 });
