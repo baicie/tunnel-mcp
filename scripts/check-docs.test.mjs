@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { checkDocs, requiredDocs } from "./check-docs.mjs";
 
 function createTempProject() {
-  return mkdtempSync(join(tmpdir(), "desktop-shell-docs-"));
+  return mkdtempSync(join(tmpdir(), "tunnel-mcp-docs-"));
 }
 
 function writeRequiredDocs(root) {
@@ -16,6 +16,10 @@ function writeRequiredDocs(root) {
 
     writeFileSync(filePath, doc.requiredSections.join("\n\n"), "utf8");
   }
+}
+
+function sectionsFor(path) {
+  return requiredDocs.find((doc) => doc.path === path).requiredSections;
 }
 
 describe("check-docs", () => {
@@ -36,12 +40,8 @@ describe("check-docs", () => {
   it("reports missing sections", () => {
     const root = createTempProject();
 
-    mkdirSync(join(root, "docs"), { recursive: true });
-    writeFileSync(
-      join(root, "README.md"),
-      "# Desktop Shell Template\n",
-      "utf8",
-    );
+    mkdirSync(join(root, "docs/agents"), { recursive: true });
+    writeFileSync(join(root, "README.md"), "# Tunnel MCP\n", "utf8");
     writeFileSync(
       join(root, "docs/template-guide.md"),
       "# Template Guide\n",
@@ -53,11 +53,19 @@ describe("check-docs", () => {
       "utf8",
     );
     writeFileSync(join(root, "docs/checks.md"), "# Checks\n", "utf8");
+    writeFileSync(
+      join(root, "docs/agents/issue-tracker.md"),
+      "# Issue Tracker: GitHub\n",
+      "utf8",
+    );
 
     const violations = checkDocs(root);
 
     expect(violations).toContain(
       "README.md is missing section: ## What is this",
+    );
+    expect(violations).toContain(
+      "README.md is missing section: ## Product layer",
     );
     expect(violations).toContain(
       "docs/template-guide.md is missing section: ## 1. Create your app",
@@ -68,6 +76,9 @@ describe("check-docs", () => {
     expect(violations).toContain(
       "docs/checks.md is missing section: ## App checks",
     );
+    expect(violations).toContain(
+      "docs/agents/issue-tracker.md is missing section: `baicie/tunnel-mcp`",
+    );
   });
 
   it("reports stale or misleading snippets", () => {
@@ -76,13 +87,41 @@ describe("check-docs", () => {
     writeRequiredDocs(root);
 
     writeFileSync(
+      join(root, "README.md"),
+      [
+        ...sectionsFor("README.md"),
+        "# Desktop Shell Template",
+        "Phase 0 ships a clean shell",
+      ].join("\n\n"),
+      "utf8",
+    );
+
+    writeFileSync(
       join(root, "docs/template-guide.md"),
       [
         "# Template Guide",
-        ...requiredDocs.find((doc) => doc.path === "docs/template-guide.md")
-          .requiredSections,
+        ...sectionsFor("docs/template-guide.md"),
         "PHASE_ALLOWED_COMMANDS",
         "PHASE6_ALLOWED_COMMANDS",
+      ].join("\n\n"),
+      "utf8",
+    );
+
+    writeFileSync(
+      join(root, "docs/checks.md"),
+      [
+        ...sectionsFor("docs/checks.md"),
+        "`check:all` is an alias of `pnpm check:app`",
+      ].join("\n\n"),
+      "utf8",
+    );
+
+    writeFileSync(
+      join(root, "docs/agents/issue-tracker.md"),
+      [
+        "# Issue Tracker: GitHub",
+        ...sectionsFor("docs/agents/issue-tracker.md"),
+        "`baicie/tauri-template`",
       ].join("\n\n"),
       "utf8",
     );
@@ -90,10 +129,22 @@ describe("check-docs", () => {
     const violations = checkDocs(root);
 
     expect(violations).toContain(
+      "README.md contains stale or misleading snippet: # Desktop Shell Template",
+    );
+    expect(violations).toContain(
+      "README.md contains stale or misleading snippet: Phase 0 ships a clean shell",
+    );
+    expect(violations).toContain(
       "docs/template-guide.md contains stale or misleading snippet: PHASE_ALLOWED_COMMANDS",
     );
     expect(violations).toContain(
       "docs/template-guide.md contains stale or misleading snippet: PHASE6_ALLOWED_COMMANDS",
+    );
+    expect(violations).toContain(
+      "docs/checks.md contains stale or misleading snippet: `check:all` is an alias of `pnpm check:app`",
+    );
+    expect(violations).toContain(
+      "docs/agents/issue-tracker.md contains stale or misleading snippet: `baicie/tauri-template`",
     );
   });
 });
