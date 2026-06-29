@@ -7,7 +7,8 @@ It packages a managed `tunnel-client` sidecar with an embedded local MCP server 
 This repository is forked from
 [`baicie/tauri-template`](https://github.com/baicie/tauri-template) and inherits
 the shell template's Tauri/React foundation, identity sync, and template
-checks. The product layer is added on top in later phases.
+checks. The Tunnel MCP product layer is added on top without turning the shell
+itself into product business code.
 
 ## What is this
 
@@ -31,14 +32,15 @@ tunnel and only for resources the user has explicitly approved.
 ## Current phase
 
 ```txt
-Phase 0 - template fork and product identity.
-Phase 1 onwards - product modules on top of the shell.
+Phase 0 - template fork and product identity: complete.
+Phase 1 - product domain model, local settings, status surface: current.
+Phase 2 onwards - managed tunnel-client lifecycle and local MCP runtime.
 ```
 
-Phase 0 ships a clean shell with Dashboard, Settings, and About. No tunnel
-client is downloaded, no MCP server is started, no permission model is wired
-yet. See `docs/agents/issue-tracker.md` and the dev-vault project plan for
-the full roadmap.
+Phase 1 introduces the product layer above the shell: typed tunnel settings,
+public masked settings, initial tunnel status, initial local MCP status, and the
+frontend settings/dashboard surface. It does not download `tunnel-client`, start
+an MCP server, or execute local tools yet.
 
 ## Features
 
@@ -49,9 +51,13 @@ the full roadmap.
 4. Dashboard / Settings / About default pages
 5. Theme and shell settings
 6. App identity generated from template.config.ts
-7. Tauri command boundary enforced through shellApi
-8. Frontend and Rust unit tests
-9. Shell boundary checks
+7. Shell command boundary enforced through shellApi
+8. Tunnel product API adapters under src/lib/api/tunnel.ts
+9. Local JSON settings store for Phase 1 product configuration
+10. Public masked OpenAI key status, never raw key returned to frontend
+11. Initial tunnel-client and local MCP server status commands
+12. Frontend and Rust unit tests
+13. Shell/product boundary checks
 ```
 
 ## Good for
@@ -80,8 +86,8 @@ This shell layer intentionally does not include:
 9. auto-update release pipeline
 ```
 
-Product modules above will be layered on top of the shell without modifying
-it.
+Product modules live in product-layer paths and are kept behind explicit API and
+runtime boundary lists.
 
 ## Quick Start
 
@@ -97,14 +103,13 @@ Start the desktop app:
 pnpm dev
 ```
 
-Run app-level checks (used after Phase 0 fork):
+Run app-level checks:
 
 ```bash
 pnpm check:app
 ```
 
-Run the full template maintenance check (used while maintaining this
-repository itself):
+Run the full template/product boundary maintenance check:
 
 ```bash
 pnpm check:template
@@ -172,14 +177,26 @@ src/
 
   lib/
     api/
+      shell.ts
+      tunnel.ts
     brand/
     query/
     platform/
     settings/
+    tunnel/
+      types.ts
+      mask.ts
 
 src-tauri/
   src/
     commands/
+      app.rs
+      settings.rs
+      shell.rs
+      tunnel.rs
+    product/
+      settings.rs
+      status.rs
     shell/
     error.rs
     lib.rs
@@ -189,6 +206,7 @@ docs/
   template-guide.md
   architecture.md
   checks.md
+  agents/issue-tracker.md
 
 scripts/
   sync-template-config.mjs
@@ -196,6 +214,30 @@ scripts/
   check-shell-boundary.mjs
   check-template-deps.mjs
   check-docs.mjs
+```
+
+## Product layer
+
+Phase 1 product code is intentionally narrow:
+
+```txt
+src/lib/api/tunnel.ts              - frontend Tauri invoke adapter
+src/lib/tunnel/types.ts            - frontend product DTOs
+src/lib/tunnel/mask.ts             - frontend-only display masking helper
+src-tauri/src/commands/tunnel.rs   - Tauri command adapter
+src-tauri/src/product/settings.rs  - JSON settings store and public settings
+src-tauri/src/product/status.rs    - initial status models
+```
+
+Rules:
+
+```txt
+1. shell code stays product-neutral
+2. product commands are listed in PRODUCT_COMMANDS
+3. frontend invoke calls stay inside API adapter modules
+4. raw OpenAI key is accepted only by save_tunnel_settings
+5. get_tunnel_settings returns only masked/public key state
+6. blank OpenAI Key input preserves the existing key
 ```
 
 ## Add a Page
@@ -236,9 +278,9 @@ export const routes = [
 
 ## Add a Setting
 
-1. Extend `ShellSettings`.
-2. Update the Rust `ShellSettings` model.
-3. Update `SettingsPage`.
+1. Extend `ShellSettings` or product settings depending on ownership.
+2. Update the matching Rust model.
+3. Update the relevant page.
 4. Add tests.
 
 See:
@@ -249,10 +291,11 @@ docs/template-guide.md
 
 ## Add a Shell Command
 
-Frontend invoke calls must only exist in:
+Frontend invoke calls must only exist in API adapter modules:
 
 ```txt
 src/lib/api/shell.ts
+src/lib/api/tunnel.ts
 ```
 
 Rust commands must be registered in:
@@ -261,10 +304,16 @@ Rust commands must be registered in:
 src-tauri/src/commands/
 ```
 
-Shell logic should live in:
+Shell-neutral logic should live in:
 
 ```txt
 src-tauri/src/shell/
+```
+
+Product logic should live in:
+
+```txt
+src-tauri/src/product/
 ```
 
 See:
@@ -322,8 +371,9 @@ opencode
 hermes
 ```
 
-Product modules will live under product-layer paths and be added in later
-phases.
+Phase 1 product paths are allowed to use Tunnel MCP vocabulary, but only under
+explicit product directories or API adapter modules. Product commands must be
+registered in `PRODUCT_COMMANDS` and mounted through `lib.rs`.
 
 Run:
 
@@ -334,8 +384,8 @@ pnpm check:shell-boundary
 ## Checks
 
 ```bash
-pnpm check:app          # app-level (used after fork)
-pnpm check:template     # template-maintenance
+pnpm check:app          # app-level
+pnpm check:template     # template/product boundary maintenance
 pnpm check:all          # both
 ```
 
@@ -348,9 +398,10 @@ node scripts/check-template.mjs --list
 ## Documentation
 
 ```txt
-docs/template-guide.md  - how to use and extend the shell
-docs/architecture.md    - architecture and module boundaries
-docs/checks.md          - check commands and CI rules
+docs/template-guide.md         - how to use and extend the shell
+docs/architecture.md           - architecture and module boundaries
+docs/checks.md                 - check commands and CI rules
+docs/agents/issue-tracker.md   - GitHub issue tracker conventions
 ```
 
 ## License
