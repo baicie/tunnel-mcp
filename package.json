@@ -1,7 +1,7 @@
 {
-  "name": "desktop-shell",
+  "name": "tunnel-mcp",
   "version": "0.1.0",
-  "description": "A minimal Tauri React desktop shell.",
+  "description": "Local MCP gateway desktop client.",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.34.3",
@@ -77,6 +77,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/example/desktop-shell"
+    "url": "https://github.com/baicie/tunnel-mcp"
   }
 }

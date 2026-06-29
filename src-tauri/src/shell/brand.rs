@@ -20,21 +20,20 @@ pub struct AppBrand {
 }
 
 pub const APP_BRAND: AppBrand = AppBrand {
-    app_name: "Desktop Shell",
-    package_name: "desktop-shell",
-    product_name: "Desktop Shell",
-    description: "A minimal Tauri React desktop shell.",
-    identifier: "com.example.desktop-shell",
-    repository_url: "https://github.com/example/desktop-shell",
-    deep_link_scheme: "desktop-shell",
-    updater_endpoint:
-        "https://github.com/example/desktop-shell/releases/latest/download/latest.json",
-    config_dir_name: "desktop-shell",
+    app_name: "Tunnel MCP",
+    package_name: "tunnel-mcp",
+    product_name: "Tunnel MCP",
+    description: "Local MCP gateway desktop client.",
+    identifier: "com.baicie.tunnel-mcp",
+    repository_url: "https://github.com/baicie/tunnel-mcp",
+    deep_link_scheme: "tunnel-mcp",
+    updater_endpoint: "https://github.com/baicie/tunnel-mcp/releases/latest/download/latest.json",
+    config_dir_name: "tunnel-mcp",
     settings_file_name: "shell-settings.json",
-    database_file_name: "desktop-shell.db",
-    log_file_name: "desktop-shell.log",
-    tray_tooltip: "Desktop Shell",
-    window_title: "Desktop Shell",
+    database_file_name: "tunnel-mcp.db",
+    log_file_name: "tunnel-mcp.log",
+    tray_tooltip: "Tunnel MCP",
+    window_title: "Tunnel MCP",
 };
 
 pub fn app_title(section: Option<&str>) -> String {

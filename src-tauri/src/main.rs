@@ -19,5 +19,5 @@ fn main() {
         }
     }
 
-    desktop_shell::run();
+    tunnel_mcp::run();
 }

@@ -46,7 +46,11 @@ function containsTauriInvokeCall(content: string): boolean {
 }
 
 function isAllowListed(rel: string) {
-  return toRepoPath(rel) === "src/test/shellRuntimeSurface.test.ts";
+  return (
+    toRepoPath(rel) === "src/test/shellRuntimeSurface.test.ts" ||
+    toRepoPath(rel) === "src/lib/brand/templateConfig.ts" ||
+    toRepoPath(rel) === "src/lib/brand/brand.ts"
+  );
 }
 
 function walk(dir: string, files: string[] = []): string[] {

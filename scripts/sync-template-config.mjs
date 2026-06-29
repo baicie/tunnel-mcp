@@ -381,8 +381,7 @@ pub const APP_BRAND: AppBrand = AppBrand {
     identifier: "${toRustString(config.identifier)}",
     repository_url: "${toRustString(config.repositoryUrl)}",
     deep_link_scheme: "${toRustString(config.deepLinkScheme)}",
-    updater_endpoint:
-        "${toRustString(config.updaterEndpoint)}",
+    updater_endpoint: "${toRustString(config.updaterEndpoint)}",
     config_dir_name: "${toRustString(config.packageName)}",
     settings_file_name: "shell-settings.json",
     database_file_name: "${toRustString(config.packageName)}.db",

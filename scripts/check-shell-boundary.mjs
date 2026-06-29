@@ -46,6 +46,10 @@ const allowedFiles = new Set([
   "scripts\\check-shell-boundary.mjs",
   "src/test/shellRuntimeSurface.test.ts",
   "src\\test\\shellRuntimeSurface.test.ts",
+  "src/lib/brand/templateConfig.ts",
+  "src\\lib\\brand\\templateConfig.ts",
+  "src/lib/brand/brand.ts",
+  "src\\lib\\brand\\brand.ts",
 ]);
 
 function escapeRegExp(value) {

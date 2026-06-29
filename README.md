@@ -1,85 +1,87 @@
-# Desktop Shell Template
+# Tunnel MCP
 
-A minimal Tauri + React desktop application shell template.
+A local-first MCP gateway desktop client built on Tauri 2 and React.
 
-It gives you a clean desktop app foundation with:
+It packages a managed `tunnel-client` sidecar with an embedded local MCP server so a remote AI (for example, ChatGPT Web) can reach a narrow, user-approved slice of local resources over a secure tunnel — never the whole disk.
 
-- Tauri 2 backend
-- React renderer
-- Shell layout
-- Dashboard / Settings / About pages
-- Window controls
-- Theme settings
-- App identity sync from one template config
-- Shell boundary checks
-- Frontend and Rust unit tests
+This repository is forked from
+[`baicie/tauri-template`](https://github.com/baicie/tauri-template) and inherits
+the shell template's Tauri/React foundation, identity sync, and template
+checks. The product layer is added on top in later phases.
 
 ## What is this
 
-Desktop Shell Template is a reusable starter for building small to medium desktop applications.
-
-It focuses on the shell layer:
+Tunnel MCP is the desktop client half of a Local MCP Gateway. The desktop side
+owns the local trust boundary:
 
 ```txt
-app identity
-window shell
-layout
-routing
-settings
-Tauri command boundary
-tray placeholder
-updater placeholder
-template checks
+local permission scopes
+tunnel-client lifecycle
+local MCP server lifecycle
+resource authorisation
+write approval
+audit log
+updater
 ```
 
-It does not include any product-specific business modules.
+It does not contain a code editor, an account system, a cloud backend, or a
+plugin marketplace. Remote AI tools reach local resources only through the
+tunnel and only for resources the user has explicitly approved.
+
+## Current phase
+
+```txt
+Phase 0 - template fork and product identity.
+Phase 1 onwards - product modules on top of the shell.
+```
+
+Phase 0 ships a clean shell with Dashboard, Settings, and About. No tunnel
+client is downloaded, no MCP server is started, no permission model is wired
+yet. See `docs/agents/issue-tracker.md` and the dev-vault project plan for
+the full roadmap.
 
 ## Features
 
 ```txt
-1. React + Tauri desktop shell
-2. Dashboard / Settings / About default pages
+1. Tauri 2 desktop shell
+2. React renderer
 3. Shell layout with sidebar and titlebar
-4. Theme mode setting
-5. Tauri command wrapper through shellApi
-6. Rust command boundary
-7. App identity generated from template.config.ts
-8. Brand and template dependency checks
-9. Frontend unit tests
-10. Rust unit tests
+4. Dashboard / Settings / About default pages
+5. Theme and shell settings
+6. App identity generated from template.config.ts
+7. Tauri command boundary enforced through shellApi
+8. Frontend and Rust unit tests
+9. Shell boundary checks
 ```
 
 ## Good for
 
-This template is suitable for:
-
 ```txt
 1. Local-first desktop tools
 2. Developer tools
-3. Admin consoles
+3. Personal MCP gateways
 4. Small internal desktop apps
-5. Tauri proof-of-concepts
-6. Desktop shells that later embed product modules
+5. Tauri proof-of-concepts that later embed tunnel-mcp product modules
 ```
 
-## Not good for
+## Not in scope for the shell
 
-This template intentionally does not include:
+This shell layer intentionally does not include:
 
 ```txt
-1. Account system
-2. Cloud backend
-3. Database layer
-4. MCP / provider / proxy / prompt management
-5. Code editor
-6. Chart dashboard
-7. Command palette
-8. i18n
-9. Auto-update release pipeline
-10. Complex plugin system
+1. tunnel-client download or process management (Phase 2)
+2. local MCP server tools or transport (Phase 3)
+3. resource scopes or permission model (Phase 5)
+4. write approval flow (Phase 5)
+5. audit log UI (Phase 6)
+6. account system, cloud backend, database layer
+7. complex plugin marketplace
+8. arbitrary shell command execution
+9. auto-update release pipeline
 ```
 
-Those can be added later as product-specific modules.
+Product modules above will be layered on top of the shell without modifying
+it.
 
 ## Quick Start
 
@@ -95,61 +97,34 @@ Start the desktop app:
 pnpm dev
 ```
 
-Run frontend checks:
+Run app-level checks (used after Phase 0 fork):
+
+```bash
+pnpm check:app
+```
+
+Run the full template maintenance check (used while maintaining this
+repository itself):
 
 ```bash
 pnpm check:template
 ```
 
-Run Rust tests:
-
-```bash
-pnpm test:tauri
-```
-
-Run all checks:
+Run all checks (template + app):
 
 ```bash
 pnpm check:all
 ```
 
-## Rename Your App
+## Identity
 
-Edit:
+Application identity is generated from one config file:
 
 ```txt
 template.config.ts
 ```
 
-Example:
-
-```ts
-export default {
-  appName: "Acme Desk",
-  packageName: "acme-desk",
-  productName: "Acme Desk",
-  identifier: "com.acme.desk",
-  description: "Acme desktop application.",
-  repositoryUrl: "https://github.com/acme/acme-desk",
-  deepLinkScheme: "acme-desk",
-  updaterEndpoint:
-    "https://github.com/acme/acme-desk/releases/latest/download/latest.json",
-};
-```
-
-Then run:
-
-```bash
-pnpm sync:template
-```
-
-Check whether generated files are in sync:
-
-```bash
-pnpm check:template-config
-```
-
-The sync command updates:
+It controls:
 
 ```txt
 package.json
@@ -160,6 +135,19 @@ src/lib/settings/settings.ts
 src-tauri/Cargo.toml
 src-tauri/tauri.conf.json
 src-tauri/src/shell/brand.rs
+```
+
+To change the app name, identifier, deep-link scheme, or updater endpoint,
+edit `template.config.ts` and run:
+
+```bash
+pnpm sync:template
+```
+
+Check whether generated files are still in sync:
+
+```bash
+pnpm check:template-config
 ```
 
 ## Project Structure
@@ -302,21 +290,20 @@ pnpm build:renderer
 
 ## Release
 
-This template includes updater configuration placeholders, but does not implement a full release pipeline.
-
-Before real release, configure:
+This project carries updater configuration placeholders, but no real release
+pipeline yet. Before a real release, configure:
 
 ```txt
-1. bundle identifier
+1. bundle identifier (set via template.config.ts)
 2. signing
-3. updater endpoint
+3. updater endpoint (set via template.config.ts)
 4. release artifacts
 5. latest.json generation
 ```
 
-## Template Boundary
+## Shell Boundary
 
-This template should not contain product-specific legacy modules such as:
+The shell layer must not contain product-specific business modules such as:
 
 ```txt
 provider
@@ -335,6 +322,9 @@ opencode
 hermes
 ```
 
+Product modules will live under product-layer paths and be added in later
+phases.
+
 Run:
 
 ```bash
@@ -343,38 +333,10 @@ pnpm check:shell-boundary
 
 ## Checks
 
-Run the full template check:
-
 ```bash
-pnpm check:template
-```
-
-This runs:
-
-```txt
-pnpm check:template-config
-pnpm check:brand
-pnpm check:shell-boundary
-pnpm check:frontend-legacy
-pnpm check:template-deps
-pnpm check:docs
-pnpm typecheck
-pnpm test:unit
-pnpm build:renderer
-cd src-tauri && cargo check
-cd src-tauri && cargo test
-```
-
-Frontend-only checks:
-
-```bash
-pnpm check:template:frontend
-```
-
-Rust-only checks:
-
-```bash
-pnpm check:template:rust
+pnpm check:app          # app-level (used after fork)
+pnpm check:template     # template-maintenance
+pnpm check:all          # both
 ```
 
 List all template check steps:
@@ -386,7 +348,7 @@ node scripts/check-template.mjs --list
 ## Documentation
 
 ```txt
-docs/template-guide.md  - how to use and extend the template
+docs/template-guide.md  - how to use and extend the shell
 docs/architecture.md    - architecture and module boundaries
 docs/checks.md          - check commands and CI rules
 ```
@@ -399,15 +361,15 @@ MIT
 
 ## Template Identity
 
-| Field            | Value                                                                         |
-| ---------------- | ----------------------------------------------------------------------------- |
-| App Name         | Desktop Shell                                                                 |
-| Package Name     | desktop-shell                                                                 |
-| Product Name     | Desktop Shell                                                                 |
-| Identifier       | com.example.desktop-shell                                                     |
-| Repository       | https://github.com/example/desktop-shell                                      |
-| Deep Link Scheme | desktop-shell                                                                 |
-| Updater Endpoint | https://github.com/example/desktop-shell/releases/latest/download/latest.json |
+| Field            | Value                                                                     |
+| ---------------- | ------------------------------------------------------------------------- |
+| App Name         | Tunnel MCP                                                                |
+| Package Name     | tunnel-mcp                                                                |
+| Product Name     | Tunnel MCP                                                                |
+| Identifier       | com.baicie.tunnel-mcp                                                     |
+| Repository       | https://github.com/baicie/tunnel-mcp                                      |
+| Deep Link Scheme | tunnel-mcp                                                                |
+| Updater Endpoint | https://github.com/baicie/tunnel-mcp/releases/latest/download/latest.json |
 
 To change the application identity, edit `template.config.ts` and run:
 
