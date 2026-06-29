@@ -53,7 +53,7 @@ export function SettingsPage() {
   return (
     <Page
       title="Settings"
-      description="Configure OpenAI access, tunnel identity and tunnnel-client behavior."
+      description="Configure OpenAI access, tunnel identity and tunnel-client behavior."
     >
       <Section>
         <form onSubmit={submit} className="flex flex-col gap-5">
