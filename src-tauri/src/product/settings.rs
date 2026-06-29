@@ -85,28 +85,69 @@ impl SettingsStore {
         }
         let raw = fs::read_to_string(&self.path)?;
         let file: SettingsFile = serde_json::from_str(&raw)?;
-        Ok(file.tunnel)
+        Ok(normalize_loaded_settings(file.tunnel))
     }
 
     pub fn save(&self, next: TunnelSettings) -> Result<TunnelSettings, SettingsError> {
         if let Some(parent) = self.path.parent() {
             fs::create_dir_all(parent)?;
         }
+
+        let existing = if self.path.exists() {
+            self.load()?
+        } else {
+            TunnelSettings::default()
+        };
+        let normalized = normalize_settings_for_save(next, existing.openai_api_key);
+
         let file = SettingsFile {
             version: 1,
-            tunnel: next.clone(),
+            tunnel: normalized.clone(),
         };
         let raw = serde_json::to_string_pretty(&file)?;
         fs::write(&self.path, raw)?;
-        Ok(next)
+        Ok(normalized)
+    }
+}
+
+fn normalize_optional_string(value: Option<String>) -> Option<String> {
+    value
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+}
+
+fn normalize_loaded_settings(settings: TunnelSettings) -> TunnelSettings {
+    TunnelSettings {
+        openai_api_key: normalize_optional_string(settings.openai_api_key),
+        tunnel_id: normalize_optional_string(settings.tunnel_id),
+        tunnel_client_path: normalize_optional_string(settings.tunnel_client_path),
+        auto_start: settings.auto_start,
+        auto_update_tunnel_client: settings.auto_update_tunnel_client,
+    }
+}
+
+fn normalize_settings_for_save(
+    settings: TunnelSettings,
+    existing_openai_api_key: Option<String>,
+) -> TunnelSettings {
+    let openai_api_key = normalize_optional_string(settings.openai_api_key)
+        .or_else(|| normalize_optional_string(existing_openai_api_key));
+
+    TunnelSettings {
+        openai_api_key,
+        tunnel_id: normalize_optional_string(settings.tunnel_id),
+        tunnel_client_path: normalize_optional_string(settings.tunnel_client_path),
+        auto_start: settings.auto_start,
+        auto_update_tunnel_client: settings.auto_update_tunnel_client,
     }
 }
 
 pub fn to_public_settings(settings: TunnelSettings) -> PublicTunnelSettings {
+    let settings = normalize_loaded_settings(settings);
     let has_key = settings
         .openai_api_key
         .as_ref()
-        .is_some_and(|value| !value.is_empty());
+        .is_some_and(|value| !value.trim().is_empty());
     PublicTunnelSettings {
         tunnel_id: settings.tunnel_id,
         tunnel_client_path: settings.tunnel_client_path,
@@ -118,13 +159,21 @@ pub fn to_public_settings(settings: TunnelSettings) -> PublicTunnelSettings {
 }
 
 pub fn mask_secret(value: &str) -> Option<String> {
+    let value = value.trim();
+
     if value.is_empty() {
         return None;
     }
-    if value.len() <= 8 {
+
+    let chars = value.chars().collect::<Vec<_>>();
+
+    if chars.len() <= 8 {
         return Some("••••".to_string());
     }
-    Some(format!("{}••••{}", &value[..4], &value[value.len() - 4..]))
+
+    let prefix = chars.iter().take(4).collect::<String>();
+    let suffix = chars.iter().skip(chars.len() - 4).collect::<String>();
+    Some(format!("{prefix}••••{suffix}"))
 }
 
 #[cfg(test)]
@@ -135,10 +184,19 @@ mod tests {
     #[test]
     fn mask_secret_hides_value() {
         assert_eq!(mask_secret(""), None);
+        assert_eq!(mask_secret("   "), None);
         assert_eq!(mask_secret("abc"), Some("••••".to_string()));
         assert_eq!(
             mask_secret("sk-1234567890abcd"),
             Some("sk-1••••abcd".to_string())
+        );
+    }
+
+    #[test]
+    fn mask_secret_handles_non_ascii_values() {
+        assert_eq!(
+            mask_secret("密钥一二三四五六七八九十"),
+            Some("密钥一二••••七八九十".to_string())
         );
     }
 
@@ -180,5 +238,56 @@ mod tests {
 
         store.save(settings.clone()).unwrap();
         assert_eq!(store.load().unwrap(), settings);
+    }
+
+    #[test]
+    fn store_preserves_existing_key_when_saved_key_is_blank() {
+        let dir = tempdir().unwrap();
+        let store = SettingsStore::new(dir.path().join("settings.json"));
+
+        store
+            .save(TunnelSettings {
+                openai_api_key: Some("sk-existing".to_string()),
+                tunnel_id: Some("tun_old".to_string()),
+                tunnel_client_path: None,
+                auto_start: false,
+                auto_update_tunnel_client: true,
+            })
+            .unwrap();
+
+        let saved = store
+            .save(TunnelSettings {
+                openai_api_key: Some("   ".to_string()),
+                tunnel_id: Some("tun_new".to_string()),
+                tunnel_client_path: None,
+                auto_start: true,
+                auto_update_tunnel_client: false,
+            })
+            .unwrap();
+
+        assert_eq!(saved.openai_api_key, Some("sk-existing".to_string()));
+        assert_eq!(saved.tunnel_id, Some("tun_new".to_string()));
+        assert!(saved.auto_start);
+        assert!(!saved.auto_update_tunnel_client);
+    }
+
+    #[test]
+    fn store_normalizes_blank_optional_values() {
+        let dir = tempdir().unwrap();
+        let store = SettingsStore::new(dir.path().join("settings.json"));
+
+        let saved = store
+            .save(TunnelSettings {
+                openai_api_key: Some("   ".to_string()),
+                tunnel_id: Some("   ".to_string()),
+                tunnel_client_path: Some("   ".to_string()),
+                auto_start: false,
+                auto_update_tunnel_client: true,
+            })
+            .unwrap();
+
+        assert_eq!(saved.openai_api_key, None);
+        assert_eq!(saved.tunnel_id, None);
+        assert_eq!(saved.tunnel_client_path, None);
     }
 }
