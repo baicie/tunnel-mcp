@@ -27,6 +27,7 @@ pub fn run() {
     let builder = shell::updater::plugin(builder);
 
     builder
+        .manage(product::tunnel::client_process::TunnelProcessManager::default())
         .invoke_handler(tauri::generate_handler![
             commands::app::get_app_info,
             commands::app::open_external,
@@ -37,6 +38,10 @@ pub fn run() {
             commands::tunnel::save_tunnel_settings,
             commands::tunnel::get_tunnel_status,
             commands::tunnel::get_mcp_status,
+            commands::tunnel_process::install_tunnel_client,
+            commands::tunnel_process::start_tunnel_client,
+            commands::tunnel_process::stop_tunnel_client,
+            commands::tunnel_process::restart_tunnel_client,
         ])
         .setup(|app| {
             shell::runtime_boundary::assert_runtime_boundary(

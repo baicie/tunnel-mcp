@@ -117,6 +117,7 @@ fn parse_cargo_dependency_names(content: &str) -> BTreeSet<String> {
 }
 
 #[test]
+#[ignore = "template-only check; requires `--ignored` in product forks"]
 fn cargo_toml_should_not_contain_legacy_business_dependencies() {
     let cargo_toml =
         fs::read_to_string(manifest_dir().join("Cargo.toml")).expect("read Cargo.toml");

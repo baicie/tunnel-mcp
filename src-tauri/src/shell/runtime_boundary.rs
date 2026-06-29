@@ -49,6 +49,10 @@ pub const PRODUCT_COMMANDS: &[&str] = &[
     "save_tunnel_settings",
     "get_tunnel_status",
     "get_mcp_status",
+    "install_tunnel_client",
+    "start_tunnel_client",
+    "stop_tunnel_client",
+    "restart_tunnel_client",
 ];
 
 /// Combined command surface exposed by `lib.rs`. The runtime bootstrap

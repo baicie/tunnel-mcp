@@ -27,6 +27,11 @@ const tunnelStatuses = vi.hoisted(() => {
   }
   const serverKey = ["get", ["M", "c", "p"].join("") + "Status"].join("");
   out[serverKey] = vi.fn();
+  // Phase 2 lifecycle commands
+  out["installTunnelClient"] = vi.fn();
+  out["startTunnelClient"] = vi.fn();
+  out["stopTunnelClient"] = vi.fn();
+  out["restartTunnelClient"] = vi.fn();
   return out;
 });
 
@@ -56,6 +61,10 @@ vi.mock("../lib/api/tunnel", () => {
   }
   const serverKey = ["get", ["M", "c", "p"].join("") + "Status"].join("");
   tunnel[serverKey] = tunnelStatuses[serverKey];
+  tunnel["installTunnelClient"] = tunnelStatuses["installTunnelClient"];
+  tunnel["startTunnelClient"] = tunnelStatuses["startTunnelClient"];
+  tunnel["stopTunnelClient"] = tunnelStatuses["stopTunnelClient"];
+  tunnel["restartTunnelClient"] = tunnelStatuses["restartTunnelClient"];
   return tunnel;
 });
 
@@ -113,6 +122,22 @@ beforeEach(() => {
   tunnelStatuses["getTunnelStatus"].mockResolvedValue({
     installed: false,
     running: false,
+  });
+  tunnelStatuses["installTunnelClient"].mockResolvedValue({
+    installed: true,
+    running: false,
+  });
+  tunnelStatuses["startTunnelClient"].mockResolvedValue({
+    installed: true,
+    running: true,
+  });
+  tunnelStatuses["stopTunnelClient"].mockResolvedValue({
+    installed: true,
+    running: false,
+  });
+  tunnelStatuses["restartTunnelClient"].mockResolvedValue({
+    installed: true,
+    running: true,
   });
   const serverKey = ["get", ["M", "c", "p"].join("") + "Status"].join("");
   tunnelStatuses[serverKey].mockResolvedValue({
