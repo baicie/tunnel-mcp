@@ -1,3 +1,4 @@
+pub mod approvals;
 pub mod mcp;
 pub mod permissions;
 pub mod settings;

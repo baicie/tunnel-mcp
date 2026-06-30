@@ -60,6 +60,9 @@ pub const PRODUCT_COMMANDS: &[&str] = &[
     "add_permission_scope",
     "remove_permission_scope",
     "check_permission",
+    "list_approval_requests",
+    "approve_request",
+    "reject_request",
 ];
 
 /// Combined command surface exposed by `lib.rs`. The runtime bootstrap

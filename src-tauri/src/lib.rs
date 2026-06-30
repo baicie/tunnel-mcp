@@ -50,6 +50,9 @@ pub fn run() {
             commands::permissions::add_permission_scope,
             commands::permissions::remove_permission_scope,
             commands::permissions::check_permission,
+            commands::approvals::list_approval_requests,
+            commands::approvals::approve_request,
+            commands::approvals::reject_request,
         ])
         .setup(|app| {
             shell::runtime_boundary::assert_runtime_boundary(
