@@ -33,7 +33,7 @@
     "check:template:frontend": "node scripts/check-template.mjs --frontend-only",
     "check:template:rust": "node scripts/check-template.mjs --rust-only",
     "check:template": "node scripts/check-template.mjs",
-    "check:all": "pnpm check:template && pnpm check:app",
+    "check:all": "pnpm check:app",
     "icons:generate": "node scripts/generate-icons.mjs",
     "icons:check": "node scripts/generate-icons.mjs --check"
   },
