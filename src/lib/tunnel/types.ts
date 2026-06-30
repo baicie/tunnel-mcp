@@ -35,6 +35,8 @@ export type McpServerStatus = {
   port: number;
   tools: string[];
   resources: string[];
+  authorizedRoots: string[];
+  lastError?: string;
 };
 
 export type TunnelClientLogLine = {

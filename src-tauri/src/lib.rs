@@ -27,7 +27,7 @@ pub fn run() {
     let builder = shell::updater::plugin(builder);
 
     builder
-        .manage(product::mcp::server::McpServerManager::new(17891))
+        .manage(product::mcp::server::McpServerManager::default())
         .manage(product::tunnel::client_process::TunnelProcessManager::default())
         .invoke_handler(tauri::generate_handler![
             commands::app::get_app_info,

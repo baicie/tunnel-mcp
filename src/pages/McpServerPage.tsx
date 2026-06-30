@@ -29,7 +29,7 @@ export function McpServerPage() {
   return (
     <Page
       title="MCP Server"
-      description="Embedded local MCP server. Phase 3 exposes safe read-only resources over JSON-RPC at 127.0.0.1."
+      description="Embedded local MCP server. Phase 3 exposes safe read-only resources over JSON-RPC at 127.0.0.1. Configure Resource Root in Settings first."
     >
       <Section title="Status">
         <dl className="grid gap-2 text-sm">
@@ -56,16 +56,17 @@ export function McpServerPage() {
         )}
       </Section>
 
-      <Section title="Resources">
-        {status?.resources.length ? (
+      <Section title="Authorized Roots">
+        {status?.authorizedRoots.length ? (
           <ul className="list-disc pl-5 text-sm">
-            {status.resources.map((resource) => (
-              <li key={resource}>{resource}</li>
+            {status.authorizedRoots.map((root) => (
+              <li key={root}>{root}</li>
             ))}
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground">
-            No resources authorized.
+            No resources authorized. Configure Resource Root in Settings before
+            starting the MCP server.
           </p>
         )}
       </Section>
@@ -93,6 +94,14 @@ export function McpServerPage() {
           </p>
         ) : null}
       </Section>
+
+      {status?.lastError ? (
+        <Section title="Last Error">
+          <p role="alert" className="text-sm text-red-500">
+            {status.lastError}
+          </p>
+        </Section>
+      ) : null}
     </Page>
   );
 }

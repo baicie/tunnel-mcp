@@ -29,6 +29,8 @@ pub struct McpServerStatus {
     pub port: u16,
     pub tools: Vec<String>,
     pub resources: Vec<String>,
+    pub authorized_roots: Vec<String>,
+    pub last_error: Option<String>,
 }
 
 pub fn initial_tunnel_status(
@@ -49,12 +51,21 @@ pub fn initial_tunnel_status(
 }
 
 #[allow(dead_code)]
-pub fn initial_mcp_status(port: u16) -> McpServerStatus {
+pub fn initial_mcp_status(
+    port: u16,
+    authorized_roots: Vec<String>,
+    last_error: Option<String>,
+) -> McpServerStatus {
     McpServerStatus {
         running: false,
         port,
         tools: vec![],
-        resources: vec![],
+        resources: authorized_roots
+            .iter()
+            .map(|root| format!("filesystem:{root}"))
+            .collect(),
+        authorized_roots,
+        last_error,
     }
 }
 
@@ -84,11 +95,28 @@ mod tests {
 
     #[test]
     fn mcp_status_is_stopped_with_configured_port() {
-        let status = initial_mcp_status(18888);
+        let status = initial_mcp_status(18888, vec![], None);
 
         assert!(!status.running);
         assert_eq!(status.port, 18888);
         assert!(status.tools.is_empty());
         assert!(status.resources.is_empty());
+        assert!(status.authorized_roots.is_empty());
+        assert!(status.last_error.is_none());
+    }
+
+    #[test]
+    fn mcp_status_exposes_authorized_roots_via_resources() {
+        let status = initial_mcp_status(
+            17891,
+            vec!["/tmp/repo".to_string(), "/tmp/notes".to_string()],
+            None,
+        );
+
+        assert_eq!(status.authorized_roots.len(), 2);
+        assert_eq!(
+            status.resources,
+            vec!["filesystem:/tmp/repo", "filesystem:/tmp/notes"]
+        );
     }
 }

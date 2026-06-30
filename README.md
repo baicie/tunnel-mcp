@@ -38,15 +38,19 @@ Phase 3 - embedded local MCP server MVP. Current.
 Phase 4+ - approvals, write tools, audit persistence, updater. Later.
 ```
 
-Phase 3 ships the embedded local MCP server MVP. It binds
-`127.0.0.1:17891` by default, serves a minimal JSON-RPC over HTTP
-endpoint at `/mcp`, and exposes read-only tools
-(`resources/list`, `resources/read`, `files/list`, `files/read`)
-guarded by an `AllowRootsReadPolicy` rooted at the user's
-`~/Documents` directory.
+Phase 3 ships the embedded local MCP server MVP. It binds to the configured
+local MCP port, serves a minimal JSON-RPC over HTTP endpoint at `/mcp`, and
+exposes read-only tools (`resources/list`, `resources/read`, `files/list`,
+`files/read`) guarded by `AllowRootsReadPolicy`.
 
-Phase 3 still does not implement write tools, command execution,
-remote connector binding, persistent audit log, or write approval.
+Resources are empty by default. The server only exposes the `resourceRoot`
+explicitly configured by the user in Settings. If no resource root is
+configured, the MCP server can start, but all file access is denied and
+`resources/list` returns an empty list.
+
+Phase 3 still does not implement write tools, command execution, environment
+variable export, remote connector binding, persistent audit log, or write
+approval.
 
 ## Features
 
