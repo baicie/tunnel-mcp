@@ -48,6 +48,11 @@ const permissionsMock = vi.hoisted(() => ({
   listPermissionScopes: vi.fn(),
 }));
 
+const logsMock = vi.hoisted(() => ({
+  listLogs: vi.fn(),
+  exportDiagnostics: vi.fn(),
+}));
+
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({
     minimize: vi.fn(),
@@ -85,6 +90,11 @@ vi.mock("../lib/api/permissions", () => ({
   addPermissionScope: vi.fn(),
   removePermissionScope: vi.fn(),
   checkPermission: vi.fn(),
+}));
+
+vi.mock("../lib/api/logs", () => ({
+  listLogs: logsMock.listLogs,
+  exportDiagnostics: logsMock.exportDiagnostics,
 }));
 
 vi.mock("../lib/api/tunnel", () => {
@@ -215,6 +225,8 @@ beforeEach(() => {
   });
   approvalsMock.listApprovalRequests.mockResolvedValue([]);
   permissionsMock.listPermissionScopes.mockResolvedValue([]);
+  logsMock.listLogs.mockResolvedValue([]);
+  logsMock.exportDiagnostics.mockResolvedValue("/tmp/diagnostics.json");
 });
 
 function renderShellApp() {
