@@ -15,12 +15,16 @@ const requiredFiles = [
   "src/pages/AuditLogsPage.tsx",
   "src/pages/AboutPage.tsx",
   "docs/release/mvp-checklist.md",
-  "src-tauri/src/product/tunnel/client_download.rs",
   "src-tauri/src/product/tunnel/client_process.rs",
   "src-tauri/src/product/mcp/server.rs",
+  "src-tauri/src/product/mcp/extra_tools.rs",
   "src-tauri/src/product/permissions/policy.rs",
   "src-tauri/src/product/approvals/store.rs",
   "src-tauri/src/product/approvals/write_guard.rs",
+  "src-tauri/src/product/commands/approval.rs",
+  "src-tauri/src/product/integrations/app_open.rs",
+  "src-tauri/src/product/workspace/profile.rs",
+  "src-tauri/src/product/workspace/store.rs",
   "src-tauri/src/product/logs/store.rs",
   "src-tauri/src/product/logs/diagnostics.rs",
   "src-tauri/src/product/security/local_token.rs",
@@ -136,6 +140,31 @@ const diagnostics = read("src-tauri/src/product/logs/diagnostics.rs");
 assert(
   diagnostics.includes("redact_value"),
   "diagnostics export must redact payload",
+);
+
+const commandApproval = read("src-tauri/src/product/commands/approval.rs");
+assert(
+  commandApproval.includes("require_approval") &&
+    commandApproval.includes("not allowed"),
+  "Command approval must keep require_approval mandatory and reject non-whitelisted commands",
+);
+
+const appIntegrations = read("src-tauri/src/product/integrations/app_open.rs");
+assert(
+  appIntegrations.includes("-R") && appIntegrations.includes("/select,"),
+  "App integrations must use passive reveal commands and never auto-write files",
+);
+
+const gitTools = read("src-tauri/src/product/mcp/extra_tools.rs");
+assert(
+  gitTools.includes("git status") && gitTools.includes("git diff"),
+  "extra_tools must expose git status/diff readonly",
+);
+assert(
+  !/Command::new\(\"git\"\)\.arg\(\"--write-object\"/.test(gitTools) &&
+    !gitTools.includes("git reset") &&
+    !gitTools.includes("git checkout "),
+  "extra_tools must never invoke mutating git commands",
 );
 
 run("pnpm", ["check:all"]);

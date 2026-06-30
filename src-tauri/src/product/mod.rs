@@ -1,4 +1,6 @@
 pub mod approvals;
+pub mod commands;
+pub mod integrations;
 pub mod logs;
 pub mod mcp;
 pub mod permissions;
@@ -7,3 +9,4 @@ pub mod settings;
 pub mod status;
 pub mod tunnel;
 pub mod updater;
+pub mod workspace;
