@@ -48,4 +48,34 @@ mod tests {
         assert_eq!(reloaded[0].id, added.id);
         assert!(reloaded[0].require_approval);
     }
+
+    #[test]
+    fn rejects_empty_pattern() {
+        let dir = tempdir().unwrap();
+        let store = PermissionStore::new(dir.path().join("permissions.json"));
+
+        let result = store.add(NewPermissionScope {
+            kind: PermissionKind::Filesystem,
+            pattern: "   ".to_string(),
+            access: PermissionAccess::Read,
+            require_approval: false,
+        });
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_command_scope_in_phase_4() {
+        let dir = tempdir().unwrap();
+        let store = PermissionStore::new(dir.path().join("permissions.json"));
+
+        let result = store.add(NewPermissionScope {
+            kind: PermissionKind::Command,
+            pattern: "command/run".to_string(),
+            access: PermissionAccess::Read,
+            require_approval: true,
+        });
+
+        assert!(result.is_err());
+    }
 }

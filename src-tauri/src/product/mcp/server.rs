@@ -1,5 +1,5 @@
 use super::protocol::{JsonRpcRequest, JsonRpcResponse};
-use super::resources::AllowRootsReadPolicy;
+use super::resources::ReadPolicy;
 use super::tools::{handle_request, MCP_TOOLS};
 use crate::product::status::McpServerStatus;
 use anyhow::anyhow;
@@ -13,7 +13,7 @@ use tokio::sync::oneshot;
 
 #[derive(Clone)]
 struct McpState {
-    policy: Arc<AllowRootsReadPolicy>,
+    policy: Arc<dyn ReadPolicy>,
 }
 
 #[derive(Default)]
@@ -31,12 +31,18 @@ pub struct McpServerManager {
 }
 
 impl McpServerManager {
-    pub async fn start(&self, port: u16, roots: Vec<PathBuf>) -> anyhow::Result<McpServerStatus> {
+    pub async fn start(
+        &self,
+        port: u16,
+        policy: Arc<dyn ReadPolicy>,
+    ) -> anyhow::Result<McpServerStatus> {
+        let authorized_roots = policy.authorized_roots();
+
         {
             let state = self.state.lock().unwrap();
             if state.running {
-                if state.port == Some(port) && state.authorized_roots == roots {
-                    return Ok(self.status_with_config(port, roots));
+                if state.port == Some(port) && state.authorized_roots == authorized_roots {
+                    return Ok(self.status_with_config(port, authorized_roots));
                 }
 
                 return Err(anyhow!(
@@ -45,7 +51,6 @@ impl McpServerManager {
             }
         }
 
-        let policy = Arc::new(AllowRootsReadPolicy::new(roots.clone())?);
         let addr: SocketAddr = ([127, 0, 0, 1], port).into();
 
         let listener = match TcpListener::bind(addr).await {
@@ -71,7 +76,7 @@ impl McpServerManager {
             state.shutdown = Some(tx);
             state.running = true;
             state.port = Some(port);
-            state.authorized_roots = roots.clone();
+            state.authorized_roots = authorized_roots.clone();
             state.last_error = None;
         }
 
@@ -93,7 +98,7 @@ impl McpServerManager {
             manager.state.lock().unwrap().running = false;
         });
 
-        Ok(self.status_with_config(port, roots))
+        Ok(self.status_with_config(port, authorized_roots))
     }
 
     pub fn stop(&self, fallback_port: u16, fallback_roots: Vec<PathBuf>) -> McpServerStatus {

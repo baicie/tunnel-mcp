@@ -1,6 +1,7 @@
 use super::scope::{PermissionAccess, PermissionDecision, PermissionKind, PermissionScope};
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use globset::{Glob, GlobSet, GlobSetBuilder};
+use log::warn;
 use std::path::{Path, PathBuf};
 
 pub const DENY_REASON_SENSITIVE_PATH: &str = "sensitive path denied";
@@ -12,6 +13,7 @@ pub fn expand_home(pattern: &str) -> String {
             return home.join(rest).to_string_lossy().to_string();
         }
     }
+
     pattern.to_string()
 }
 
@@ -26,33 +28,76 @@ fn strip_verbatim_prefix(path: &Path) -> PathBuf {
         .strip_prefix(r"\\?\")
         .map(str::to_string)
         .unwrap_or(text);
+
     PathBuf::from(trimmed)
+}
+
+pub fn normalize_path_text(path: &Path) -> String {
+    strip_verbatim_prefix(path)
+        .to_string_lossy()
+        .replace('\\', "/")
 }
 
 pub fn sensitive_globs() -> anyhow::Result<GlobSet> {
     let mut builder = GlobSetBuilder::new();
+
     for pattern in [
+        "**/.ssh",
         "**/.ssh/**",
+        "**/.gnupg",
         "**/.gnupg/**",
+        "**/Library/Keychains",
         "**/Library/Keychains/**",
+        "**/.aws",
         "**/.aws/**",
+        "**/.kube",
         "**/.kube/**",
+        "**/.docker",
         "**/.docker/**",
         "**/.env",
         "**/.env.*",
         "**/id_rsa",
         "**/id_ed25519",
+        "**/AppData/Roaming/Microsoft/Credentials",
         "**/AppData/Roaming/Microsoft/Credentials/**",
     ] {
         builder.add(Glob::new(pattern)?);
     }
+
     Ok(builder.build()?)
 }
 
-pub fn pattern_to_glob(pattern: &str) -> anyhow::Result<Glob> {
-    let expanded = expand_home(pattern);
+pub fn contains_glob_meta(value: &str) -> bool {
+    value.contains('*') || value.contains('?') || value.contains('[') || value.contains('{')
+}
+
+pub fn normalize_scope_pattern(pattern: &str) -> anyhow::Result<String> {
+    let trimmed = pattern.trim();
+    if trimmed.is_empty() {
+        return Err(anyhow!("permission pattern is required"));
+    }
+
+    let expanded = expand_home(trimmed);
     let normalized = expanded.replace('\\', "/");
-    Glob::new(&normalized).map_err(Into::into)
+
+    if contains_glob_meta(&normalized) {
+        Glob::new(&normalized).context("invalid permission glob")?;
+        return Ok(normalized);
+    }
+
+    let canonical = PathBuf::from(&expanded)
+        .canonicalize()
+        .with_context(|| format!("invalid permission path: {expanded}"))?;
+
+    if canonical.is_dir() {
+        return Ok(format!("{}/**", normalize_path_text(&canonical)));
+    }
+
+    Ok(normalize_path_text(&canonical))
+}
+
+pub fn pattern_to_glob(pattern: &str) -> anyhow::Result<Glob> {
+    Glob::new(pattern).map_err(Into::into)
 }
 
 #[derive(Debug, Clone)]
@@ -80,11 +125,15 @@ impl PermissionPolicy {
                 };
             }
         };
-        let target = strip_verbatim_prefix(&canonical)
-            .to_string_lossy()
-            .replace('\\', "/");
+
+        let target = normalize_path_text(&canonical);
 
         if self.denylist.is_match(&target) {
+            warn!(
+                "permission denied: reason={} path={}",
+                DENY_REASON_SENSITIVE_PATH, target
+            );
+
             return PermissionDecision {
                 allowed: false,
                 require_approval: false,
@@ -93,18 +142,33 @@ impl PermissionPolicy {
         }
 
         for scope in &self.scopes {
-            if scope.kind != PermissionKind::Filesystem || !scope.access.allows(&requested) {
+            if scope.kind != PermissionKind::Filesystem {
                 continue;
             }
-            let Ok(glob) = pattern_to_glob(&scope.pattern) else {
+
+            if !scope.access.allows(&requested) {
+                continue;
+            }
+
+            let Ok(pattern) = normalize_scope_pattern(&scope.pattern) else {
                 continue;
             };
-            let Ok(set) = GlobSetBuilder::new().add(glob).build() else {
+
+            let Ok(glob) = pattern_to_glob(&pattern) else {
                 continue;
             };
+
+            let mut builder = GlobSetBuilder::new();
+            builder.add(glob);
+
+            let Ok(set) = builder.build() else {
+                continue;
+            };
+
             if set.is_match(&target) {
                 let require_approval =
                     scope.require_approval || requested != PermissionAccess::Read;
+
                 return PermissionDecision {
                     allowed: true,
                     require_approval,
@@ -112,6 +176,11 @@ impl PermissionPolicy {
                 };
             }
         }
+
+        warn!(
+            "permission denied: reason={} path={}",
+            DENY_REASON_NOT_AUTHORIZED, target
+        );
 
         PermissionDecision {
             allowed: false,

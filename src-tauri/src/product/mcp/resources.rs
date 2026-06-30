@@ -49,11 +49,13 @@ pub trait ReadPolicy: Send + Sync + 'static {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct AllowRootsReadPolicy {
     roots: Vec<PathBuf>,
 }
 
 impl AllowRootsReadPolicy {
+    #[allow(dead_code)]
     pub fn new(roots: Vec<PathBuf>) -> anyhow::Result<Self> {
         let mut normalized = Vec::new();
 

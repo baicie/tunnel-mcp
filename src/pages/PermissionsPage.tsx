@@ -9,16 +9,13 @@ import {
 } from "../lib/api/permissions";
 import type {
   PermissionAccess,
-  PermissionKind,
   PermissionScope,
 } from "../lib/permissions/types";
 
 const ACCESS_OPTIONS: PermissionAccess[] = ["read", "write", "readwrite"];
-const KIND_OPTIONS: PermissionKind[] = ["filesystem", "command", "app"];
 
 export function PermissionsPage() {
   const [scopes, setScopes] = useState<PermissionScope[]>([]);
-  const [kind, setKind] = useState<PermissionKind>("filesystem");
   const [pattern, setPattern] = useState("");
   const [access, setAccess] = useState<PermissionAccess>("read");
   const [requireApproval, setRequireApproval] = useState(false);
@@ -38,7 +35,12 @@ export function PermissionsPage() {
     setBusy(true);
     setError(null);
     try {
-      await addPermissionScope({ kind, pattern, access, requireApproval });
+      await addPermissionScope({
+        kind: "filesystem",
+        pattern,
+        access,
+        requireApproval,
+      });
       setPattern("");
       await refresh();
     } catch (err) {
@@ -72,29 +74,18 @@ export function PermissionsPage() {
       <Section title="Add Scope">
         <form onSubmit={submit} className="grid gap-3 text-sm">
           <label className="grid gap-1">
-            <span>Kind</span>
-            <select
-              value={kind}
-              onChange={(event) =>
-                setKind(event.target.value as PermissionKind)
-              }
-              className="rounded border border-border bg-background px-2 py-1"
-            >
-              {KIND_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-1">
             <span>Directory or glob</span>
             <input
               value={pattern}
               onChange={(event) => setPattern(event.target.value)}
-              placeholder="~/Documents/project-a/**"
+              placeholder="~/Documents/project-a"
               className="rounded border border-border bg-background px-2 py-1"
             />
+            <span className="text-xs text-muted-foreground">
+              Plain directories are normalized to <code>/path/**</code> on save;
+              globs containing <code>*</code>, <code>?</code>, <code>[</code>,
+              or <code>{`{`}</code> are stored as-is.
+            </span>
           </label>
           <label className="grid gap-1">
             <span>Access</span>

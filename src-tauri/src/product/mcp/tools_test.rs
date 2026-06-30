@@ -1,15 +1,27 @@
 #[cfg(test)]
 mod tests {
     use crate::product::mcp::protocol::JsonRpcRequest;
-    use crate::product::mcp::resources::AllowRootsReadPolicy;
     use crate::product::mcp::tools::handle_request;
+    use crate::product::permissions::read_policy::PermissionReadPolicy;
+    use crate::product::permissions::scope::{PermissionAccess, PermissionKind, PermissionScope};
     use serde_json::json;
     use tempfile::tempdir;
+
+    fn policy_for_dir(dir: &std::path::Path) -> PermissionReadPolicy {
+        PermissionReadPolicy::new(vec![PermissionScope {
+            id: "1".to_string(),
+            kind: PermissionKind::Filesystem,
+            pattern: dir.display().to_string(),
+            access: PermissionAccess::Read,
+            require_approval: false,
+        }])
+        .unwrap()
+    }
 
     #[test]
     fn tools_list_returns_mvp_tools() {
         let dir = tempdir().unwrap();
-        let policy = AllowRootsReadPolicy::new(vec![dir.path().to_path_buf()]).unwrap();
+        let policy = policy_for_dir(dir.path());
         let response = handle_request(
             JsonRpcRequest {
                 jsonrpc: "2.0".to_string(),
@@ -29,7 +41,7 @@ mod tests {
     #[test]
     fn unknown_method_returns_error() {
         let dir = tempdir().unwrap();
-        let policy = AllowRootsReadPolicy::new(vec![dir.path().to_path_buf()]).unwrap();
+        let policy = policy_for_dir(dir.path());
         let response = handle_request(
             JsonRpcRequest {
                 jsonrpc: "2.0".to_string(),
@@ -45,7 +57,7 @@ mod tests {
     #[test]
     fn resources_list_returns_authorized_roots_not_global_filesystem() {
         let dir = tempdir().unwrap();
-        let policy = AllowRootsReadPolicy::new(vec![dir.path().to_path_buf()]).unwrap();
+        let policy = policy_for_dir(dir.path());
 
         let response = handle_request(
             JsonRpcRequest {
@@ -71,7 +83,7 @@ mod tests {
         let file = dir.path().join("a.txt");
         std::fs::write(&file, "hello").unwrap();
 
-        let policy = AllowRootsReadPolicy::new(vec![dir.path().to_path_buf()]).unwrap();
+        let policy = policy_for_dir(dir.path());
 
         let response = handle_request(
             JsonRpcRequest {

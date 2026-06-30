@@ -125,4 +125,52 @@ mod tests {
         let decision = policy.check_path(&link, PermissionAccess::Read);
         assert!(!decision.allowed);
     }
+
+    #[test]
+    fn rejects_sensitive_directory_itself_even_if_scope_matches() {
+        let dir = tempdir().unwrap();
+        let ssh = dir.path().join(".ssh");
+        fs::create_dir_all(&ssh).unwrap();
+        let policy = PermissionPolicy::new(vec![scope(
+            format!("{}/**", dir.path().display()),
+            PermissionAccess::Readwrite,
+            false,
+        )])
+        .unwrap();
+        let decision = policy.check_path(&ssh, PermissionAccess::Read);
+        assert!(!decision.allowed);
+        assert_eq!(decision.reason, DENY_REASON_SENSITIVE_PATH);
+    }
+
+    #[test]
+    fn plain_directory_scope_authorizes_children() {
+        let dir = tempdir().unwrap();
+        let file = dir.path().join("child.txt");
+        fs::write(&file, "hello").unwrap();
+        let policy = PermissionPolicy::new(vec![scope(
+            dir.path().display().to_string(),
+            PermissionAccess::Read,
+            false,
+        )])
+        .unwrap();
+        let decision = policy.check_path(&file, PermissionAccess::Read);
+        assert!(decision.allowed);
+        assert!(!decision.require_approval);
+    }
+
+    #[test]
+    fn read_with_require_approval_is_not_preapproved() {
+        let dir = tempdir().unwrap();
+        let file = dir.path().join("a.txt");
+        fs::write(&file, "hello").unwrap();
+        let policy = PermissionPolicy::new(vec![scope(
+            format!("{}/*", dir.path().display()),
+            PermissionAccess::Read,
+            true,
+        )])
+        .unwrap();
+        let decision = policy.check_path(&file, PermissionAccess::Read);
+        assert!(decision.allowed);
+        assert!(decision.require_approval);
+    }
 }
