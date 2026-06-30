@@ -56,6 +56,7 @@ const logsMock = vi.hoisted(() => ({
 const updaterMock = vi.hoisted(() => ({
   checkAppUpdate: vi.fn(),
   checkTunnelClientUpdate: vi.fn(),
+  updateTunnelClient: vi.fn(),
   rollbackTunnelClient: vi.fn(),
 }));
 
@@ -106,6 +107,7 @@ vi.mock("../lib/api/logs", () => ({
 vi.mock("../lib/api/updater", () => ({
   checkAppUpdate: updaterMock.checkAppUpdate,
   checkTunnelClientUpdate: updaterMock.checkTunnelClientUpdate,
+  updateTunnelClient: updaterMock.updateTunnelClient,
   rollbackTunnelClient: updaterMock.rollbackTunnelClient,
 }));
 
@@ -257,6 +259,18 @@ beforeEach(() => {
     currentVersion: undefined,
     latestVersion: undefined,
     updateAvailable: false,
+    assetUrl: undefined,
+    assetSha256: undefined,
+    checksumVerified: false,
+  });
+  updaterMock.updateTunnelClient.mockResolvedValue({
+    installed: true,
+    currentVersion: "0.2.0",
+    latestVersion: undefined,
+    updateAvailable: false,
+    assetUrl: undefined,
+    assetSha256: undefined,
+    checksumVerified: true,
   });
 });
 

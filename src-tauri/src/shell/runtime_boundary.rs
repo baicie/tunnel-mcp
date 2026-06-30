@@ -67,6 +67,7 @@ pub const PRODUCT_COMMANDS: &[&str] = &[
     "export_diagnostics",
     "check_app_update",
     "check_tunnel_client_update",
+    "update_tunnel_client",
     "rollback_tunnel_client",
 ];
 

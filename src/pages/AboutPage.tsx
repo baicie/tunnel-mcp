@@ -9,6 +9,7 @@ import {
   checkAppUpdate,
   checkTunnelClientUpdate,
   rollbackTunnelClient,
+  updateTunnelClient,
 } from "../lib/api/updater";
 import { APP_BRAND } from "../lib/brand/brand";
 import { openExternal } from "../lib/platform/external";
@@ -108,6 +109,21 @@ export function AboutPage(_props: ShellPageProps) {
           >
             Check tunnel-client Update
           </Button>
+
+          <Button
+            variant="default"
+            disabled={busy || clientUpdate?.updateAvailable === false}
+            onClick={() =>
+              runUpdate(async () =>
+                setClientUpdate(
+                  await updateTunnelClient(DEFAULT_TUNNEL_CLIENT_MANIFEST_URL),
+                ),
+              )
+            }
+          >
+            Update tunnel-client
+          </Button>
+
           <Button
             variant="outline"
             disabled={busy}

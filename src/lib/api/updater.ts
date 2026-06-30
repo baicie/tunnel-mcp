@@ -14,6 +14,12 @@ export async function checkTunnelClientUpdate(
   return invoke("check_tunnel_client_update", { manifestUrl });
 }
 
+export async function updateTunnelClient(
+  manifestUrl: string,
+): Promise<TunnelClientVersionStatus> {
+  return invoke("update_tunnel_client", { manifestUrl });
+}
+
 export async function rollbackTunnelClient(): Promise<TunnelClientVersionStatus> {
   return invoke("rollback_tunnel_client");
 }

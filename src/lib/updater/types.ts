@@ -10,4 +10,7 @@ export type TunnelClientVersionStatus = {
   currentVersion?: string;
   latestVersion?: string;
   updateAvailable: boolean;
+  assetUrl?: string;
+  assetSha256?: string;
+  checksumVerified: boolean;
 };

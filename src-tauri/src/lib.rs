@@ -57,6 +57,7 @@ pub fn run() {
             commands::logs::export_diagnostics,
             commands::updater::check_app_update,
             commands::updater::check_tunnel_client_update,
+            commands::updater::update_tunnel_client,
             commands::updater::rollback_tunnel_client,
         ])
         .setup(|app| {
