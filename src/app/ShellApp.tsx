@@ -21,7 +21,7 @@ export function ShellApp() {
       onRouteChange={setActiveRoute}
       settings={shellSettings.settings}
     >
-      <Page shellSettings={shellSettings} />
+      <Page shellSettings={shellSettings} onNavigate={setActiveRoute} />
     </AppLayout>
   );
 }

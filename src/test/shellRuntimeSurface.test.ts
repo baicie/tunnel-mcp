@@ -51,6 +51,7 @@ const productPrefixes = [
   "src/lib/permissions/",
   "src/lib/approvals/",
   "src/lib/logs/",
+  "src/lib/dashboard/",
   "src/pages/",
   "src/components/tunnel/",
   "src/components/mcp/",
@@ -59,6 +60,7 @@ const productPrefixes = [
   "src/components/logs/",
   "src/lib/api/tunnel.ts",
   "src/lib/api/mcp.ts",
+  "src/lib/api/dashboard.ts",
 ];
 
 function isProductPath(rel: string): boolean {
@@ -148,6 +150,7 @@ describe("shell runtime surface", () => {
       "src/lib/api/mcp.ts",
       "src/lib/api/permissions.ts",
       "src/lib/api/approvals.ts",
+      "src/lib/api/dashboard.ts",
     ]);
 
     for (const file of files) {

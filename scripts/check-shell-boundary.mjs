@@ -62,6 +62,7 @@ const productDirectoryPrefixes = [
   "src/lib/permissions/",
   "src/lib/approvals/",
   "src/lib/logs/",
+  "src/lib/dashboard/",
   "src/pages/",
   "src/components/tunnel/",
   "src/components/mcp/",
@@ -70,6 +71,7 @@ const productDirectoryPrefixes = [
   "src/components/logs/",
   "src/lib/api/tunnel.ts",
   "src/lib/api/mcp.ts",
+  "src/lib/api/dashboard.ts",
 ];
 
 function isProductPath(rel) {
@@ -128,6 +130,7 @@ const allowedInvokeFiles = [
   "src/lib/api/mcp.ts",
   "src/lib/api/permissions.ts",
   "src/lib/api/approvals.ts",
+  "src/lib/api/dashboard.ts",
 ];
 
 function allowedInvokeRel(rel) {

@@ -51,15 +51,8 @@ mod tests {
         )
         .is_err());
         store.approve(&request.id).unwrap();
-        write_file_with_approval(
-            &policy,
-            &store,
-            &logs,
-            &request.id,
-            target.clone(),
-            "hello",
-        )
-        .unwrap();
+        write_file_with_approval(&policy, &store, &logs, &request.id, target.clone(), "hello")
+            .unwrap();
         assert_eq!(fs::read_to_string(target).unwrap(), "hello");
     }
 
@@ -163,19 +156,15 @@ mod tests {
             .unwrap();
         store.approve(&request.id).unwrap();
 
-        write_file_with_approval(
-            &policy,
-            &store,
-            &logs,
-            &request.id,
-            target.clone(),
-            "hello",
-        )
-        .unwrap();
+        write_file_with_approval(&policy, &store, &logs, &request.id, target.clone(), "hello")
+            .unwrap();
 
         let entries = logs.list().unwrap();
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].approval_id, request.id);
-        assert_eq!(entries[0].status, super::super::write_log::WriteLogStatus::Succeeded);
+        assert_eq!(
+            entries[0].status,
+            super::super::write_log::WriteLogStatus::Succeeded
+        );
     }
 }

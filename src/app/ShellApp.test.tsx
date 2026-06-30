@@ -40,6 +40,14 @@ const mcpMock = vi.hoisted(() => ({
   getMcpStatus: vi.fn(),
 }));
 
+const approvalsMock = vi.hoisted(() => ({
+  listApprovalRequests: vi.fn(),
+}));
+
+const permissionsMock = vi.hoisted(() => ({
+  listPermissionScopes: vi.fn(),
+}));
+
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({
     minimize: vi.fn(),
@@ -66,6 +74,19 @@ vi.mock(MCP_MOCK_PATH, () => ({
   getMcpStatus: mcpMock.getMcpStatus,
 }));
 
+vi.mock("../lib/api/approvals", () => ({
+  listApprovalRequests: approvalsMock.listApprovalRequests,
+  approveRequest: vi.fn(),
+  rejectRequest: vi.fn(),
+}));
+
+vi.mock("../lib/api/permissions", () => ({
+  listPermissionScopes: permissionsMock.listPermissionScopes,
+  addPermissionScope: vi.fn(),
+  removePermissionScope: vi.fn(),
+  checkPermission: vi.fn(),
+}));
+
 vi.mock("../lib/api/tunnel", () => {
   const tunnelNames = ["Settings", "Status"];
   const tunnel: Record<string, ReturnType<typeof vi.fn>> = {};
@@ -80,6 +101,10 @@ vi.mock("../lib/api/tunnel", () => {
   tunnel["stopTunnelClient"] = tunnelStatuses["stopTunnelClient"];
   tunnel["restartTunnelClient"] = tunnelStatuses["restartTunnelClient"];
   tunnel["getTunnelClientLogs"] = tunnelStatuses["getTunnelClientLogs"];
+  // The local server status command is re-exported through the tunnel
+  // api module so the dashboard can aggregate settings, status and
+  // local server reachability in one place.
+  tunnel["getMcpStatus"] = mcpMock.getMcpStatus;
   return tunnel;
 });
 
@@ -172,19 +197,24 @@ beforeEach(() => {
     port: 17891,
     tools: [],
     resources: [],
+    authorizedRoots: [],
   });
   mcpMock.startMcpServer.mockResolvedValue({
     running: true,
     port: 17891,
     tools: ["resources/list", "resources/read", "files/list", "files/read"],
     resources: ["filesystem"],
+    authorizedRoots: [],
   });
   mcpMock.stopMcpServer.mockResolvedValue({
     running: false,
     port: 17891,
     tools: ["resources/list", "resources/read", "files/list", "files/read"],
     resources: ["filesystem"],
+    authorizedRoots: [],
   });
+  approvalsMock.listApprovalRequests.mockResolvedValue([]);
+  permissionsMock.listPermissionScopes.mockResolvedValue([]);
 });
 
 function renderShellApp() {

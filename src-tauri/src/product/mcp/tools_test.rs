@@ -55,7 +55,10 @@ mod tests {
             None,
         );
 
-        let tools = response.result.unwrap()["tools"].as_array().unwrap().clone();
+        let tools = response.result.unwrap()["tools"]
+            .as_array()
+            .unwrap()
+            .clone();
 
         assert!(tools.contains(&json!("files.write")));
     }

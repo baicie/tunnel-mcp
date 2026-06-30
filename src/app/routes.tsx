@@ -23,6 +23,7 @@ export type RouteId =
 
 export interface ShellPageProps {
   shellSettings: UseShellSettingsResult;
+  onNavigate: (route: RouteId) => void;
 }
 
 export interface ShellRoute {
