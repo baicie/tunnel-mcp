@@ -56,6 +56,10 @@ pub const PRODUCT_COMMANDS: &[&str] = &[
     "stop_tunnel_client",
     "restart_tunnel_client",
     "get_tunnel_client_logs",
+    "list_permission_scopes",
+    "add_permission_scope",
+    "remove_permission_scope",
+    "check_permission",
 ];
 
 /// Combined command surface exposed by `lib.rs`. The runtime bootstrap

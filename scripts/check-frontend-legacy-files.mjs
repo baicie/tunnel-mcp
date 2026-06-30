@@ -102,6 +102,7 @@ const allowedExactPaths = new Set([
   "src/lib/api/shell.test.ts",
   "src/lib/api/tunnel.ts",
   "src/lib/api/mcp.ts",
+  "src/lib/api/permissions.ts",
   "src/lib/query/queryClient.ts",
   "src/lib/query/queryKeys.ts",
 ]);

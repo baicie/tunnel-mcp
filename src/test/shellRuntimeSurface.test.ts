@@ -146,6 +146,7 @@ describe("shell runtime surface", () => {
       "src/lib/api/shell.ts",
       "src/lib/api/tunnel.ts",
       "src/lib/api/mcp.ts",
+      "src/lib/api/permissions.ts",
     ]);
 
     for (const file of files) {
