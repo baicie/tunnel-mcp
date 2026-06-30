@@ -62,6 +62,7 @@ const productDirectoryPrefixes = [
   "src/lib/permissions/",
   "src/lib/approvals/",
   "src/lib/logs/",
+  "src/lib/updater/",
   "src/lib/dashboard/",
   "src/pages/",
   "src/components/tunnel/",
@@ -132,6 +133,7 @@ const allowedInvokeFiles = [
   "src/lib/api/approvals.ts",
   "src/lib/api/dashboard.ts",
   "src/lib/api/logs.ts",
+  "src/lib/api/updater.ts",
 ];
 
 function allowedInvokeRel(rel) {

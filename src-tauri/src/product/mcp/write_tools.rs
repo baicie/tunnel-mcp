@@ -4,6 +4,9 @@ use crate::product::approvals::write_guard::{
     canonical_write_target, sha256_hex, write_file_with_approval,
 };
 use crate::product::approvals::write_log::WriteLogStore;
+use crate::product::logs::audit::append_audit_log;
+use crate::product::logs::event::LogLevel;
+use crate::product::logs::store::AuditLogStore;
 use crate::product::permissions::policy::PermissionPolicy;
 use anyhow::{anyhow, bail};
 use serde_json::{json, Value};
@@ -17,10 +20,12 @@ pub enum WriteToolResult {
 }
 
 pub fn handle_files_write(
+    request_id: Option<String>,
     params: &Value,
     policy: &PermissionPolicy,
     approval_store: &ApprovalStore,
     write_log_store: &WriteLogStore,
+    audit_log_store: &AuditLogStore,
 ) -> anyhow::Result<WriteToolResult> {
     let target_path = params
         .get("path")
@@ -39,8 +44,33 @@ pub fn handle_files_write(
 
     let decision = policy.check_write_target(&canonical_target);
     if !decision.allowed {
+        append_audit_log(
+            audit_log_store,
+            request_id.clone(),
+            "permission.deny",
+            LogLevel::Warn,
+            "write permission denied",
+            json!({
+                "path": canonical_target_text,
+                "reason": decision.reason,
+                "requireApproval": decision.require_approval,
+            }),
+        );
+
         bail!("permission denied: {}", decision.reason);
     }
+
+    append_audit_log(
+        audit_log_store,
+        request_id.clone(),
+        "permission.allow",
+        LogLevel::Info,
+        "write permission allowed",
+        json!({
+            "path": canonical_target_text,
+            "requireApproval": decision.require_approval,
+        }),
+    );
 
     if let Some(approval_id) = params.get("approvalId").and_then(Value::as_str) {
         write_file_with_approval(
@@ -51,6 +81,20 @@ pub fn handle_files_write(
             canonical_target,
             content,
         )?;
+
+        append_audit_log(
+            audit_log_store,
+            request_id,
+            "file.write",
+            LogLevel::Info,
+            "file written through MCP",
+            json!({
+                "approvalId": approval_id,
+                "path": canonical_target_text,
+                "bytes": content.len(),
+                "contentSha256": content_sha256,
+            }),
+        );
 
         return Ok(WriteToolResult::Written(json!({
             "ok": true,
@@ -71,6 +115,21 @@ pub fn handle_files_write(
         content_sha256: Some(content_sha256.clone()),
         ttl_seconds: DEFAULT_WRITE_APPROVAL_TTL_SECONDS,
     })?;
+
+    append_audit_log(
+        audit_log_store,
+        request_id,
+        "approval.created",
+        LogLevel::Info,
+        "approval request created",
+        json!({
+            "approvalId": request.id,
+            "tool": request.tool,
+            "targetPath": request.target_path,
+            "contentSha256": content_sha256,
+            "expiresAt": request.expires_at,
+        }),
+    );
 
     Ok(WriteToolResult::ApprovalRequired(json!({
         "approvalRequired": true,

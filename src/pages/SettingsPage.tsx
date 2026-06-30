@@ -119,6 +119,20 @@ export function SettingsPage() {
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Tunnel Client Version</span>
+            <input
+              readOnly
+              className="rounded-md border border-border-default bg-muted px-3 py-2 text-sm text-muted-foreground"
+              value={settings.tunnelClientVersion ?? ""}
+              placeholder="not installed"
+            />
+            <span className="text-xs text-muted-foreground">
+              Updated automatically when tunnel-client is installed or rolled
+              back.
+            </span>
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium">MCP Server Port</span>
             <input
               type="number"

@@ -65,6 +65,9 @@ pub const PRODUCT_COMMANDS: &[&str] = &[
     "reject_request",
     "list_logs",
     "export_diagnostics",
+    "check_app_update",
+    "check_tunnel_client_update",
+    "rollback_tunnel_client",
 ];
 
 /// Combined command surface exposed by `lib.rs`. The runtime bootstrap

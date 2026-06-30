@@ -53,6 +53,12 @@ const logsMock = vi.hoisted(() => ({
   exportDiagnostics: vi.fn(),
 }));
 
+const updaterMock = vi.hoisted(() => ({
+  checkAppUpdate: vi.fn(),
+  checkTunnelClientUpdate: vi.fn(),
+  rollbackTunnelClient: vi.fn(),
+}));
+
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({
     minimize: vi.fn(),
@@ -95,6 +101,12 @@ vi.mock("../lib/api/permissions", () => ({
 vi.mock("../lib/api/logs", () => ({
   listLogs: logsMock.listLogs,
   exportDiagnostics: logsMock.exportDiagnostics,
+}));
+
+vi.mock("../lib/api/updater", () => ({
+  checkAppUpdate: updaterMock.checkAppUpdate,
+  checkTunnelClientUpdate: updaterMock.checkTunnelClientUpdate,
+  rollbackTunnelClient: updaterMock.rollbackTunnelClient,
 }));
 
 vi.mock("../lib/api/tunnel", () => {
@@ -227,6 +239,25 @@ beforeEach(() => {
   permissionsMock.listPermissionScopes.mockResolvedValue([]);
   logsMock.listLogs.mockResolvedValue([]);
   logsMock.exportDiagnostics.mockResolvedValue("/tmp/diagnostics.json");
+  updaterMock.checkAppUpdate.mockResolvedValue({
+    available: false,
+    currentVersion: "0.1.0",
+    latestVersion: undefined,
+    notes:
+      "Tauri updater integration placeholder; enable after signing and release pipeline are configured.",
+  });
+  updaterMock.checkTunnelClientUpdate.mockResolvedValue({
+    installed: false,
+    currentVersion: undefined,
+    latestVersion: undefined,
+    updateAvailable: false,
+  });
+  updaterMock.rollbackTunnelClient.mockResolvedValue({
+    installed: false,
+    currentVersion: undefined,
+    latestVersion: undefined,
+    updateAvailable: false,
+  });
 });
 
 function renderShellApp() {

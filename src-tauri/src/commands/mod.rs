@@ -5,6 +5,6 @@ pub mod mcp;
 pub mod permissions;
 pub mod settings;
 pub mod shell;
-
 pub mod tunnel;
 pub mod tunnel_process;
+pub mod updater;

@@ -55,6 +55,9 @@ pub fn run() {
             commands::approvals::reject_request,
             commands::logs::list_logs,
             commands::logs::export_diagnostics,
+            commands::updater::check_app_update,
+            commands::updater::check_tunnel_client_update,
+            commands::updater::rollback_tunnel_client,
         ])
         .setup(|app| {
             shell::runtime_boundary::assert_runtime_boundary(

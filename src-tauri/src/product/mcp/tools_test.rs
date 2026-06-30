@@ -1,7 +1,12 @@
 #[cfg(test)]
 mod tests {
+    use crate::product::approvals::store::ApprovalStore;
+    use crate::product::approvals::write_log::WriteLogStore;
+    use crate::product::logs::event::{ListLogsInput, LogLevel};
+    use crate::product::logs::store::AuditLogStore;
     use crate::product::mcp::protocol::JsonRpcRequest;
-    use crate::product::mcp::tools::handle_request;
+    use crate::product::mcp::tools::{handle_request, McpWriteContext};
+    use crate::product::permissions::policy::PermissionPolicy;
     use crate::product::permissions::read_policy::PermissionReadPolicy;
     use crate::product::permissions::scope::{PermissionAccess, PermissionKind, PermissionScope};
     use serde_json::json;
@@ -16,6 +21,15 @@ mod tests {
             require_approval: false,
         }])
         .unwrap()
+    }
+
+    fn write_context_for(dir: &std::path::Path) -> McpWriteContext {
+        McpWriteContext {
+            permission_policy: PermissionPolicy::new(vec![]).unwrap(),
+            approval_store: ApprovalStore::new(dir.join("approvals.json")),
+            write_log_store: WriteLogStore::new(dir.join("write-log.json")),
+            audit_log_store: AuditLogStore::new(dir.join("logs.ndjson")),
+        }
     }
 
     #[test]
@@ -143,5 +157,72 @@ mod tests {
         );
 
         assert!(response.error.is_some());
+    }
+
+    #[test]
+    fn mcp_request_writes_audit_log_with_request_id() {
+        let dir = tempdir().unwrap();
+        let policy = policy_for_dir(dir.path());
+        let context = write_context_for(dir.path());
+
+        let _ = handle_request(
+            JsonRpcRequest {
+                jsonrpc: "2.0".to_string(),
+                id: json!("req-1"),
+                method: "tools/list".to_string(),
+                params: json!({}),
+            },
+            &policy,
+            Some(&context),
+        );
+
+        let logs = context
+            .audit_log_store
+            .list(ListLogsInput {
+                r#type: Some("mcp.request".to_string()),
+                request_id: Some("req-1".to_string()),
+                limit: Some(10),
+            })
+            .unwrap();
+
+        assert!(logs
+            .iter()
+            .any(|event| event.r#type == "mcp.request"
+                && event.request_id.as_deref() == Some("req-1")));
+    }
+
+    #[test]
+    fn files_read_writes_file_read_audit_event() {
+        let dir = tempdir().unwrap();
+        let file = dir.path().join("a.txt");
+        std::fs::write(&file, "hello").unwrap();
+
+        let policy = policy_for_dir(dir.path());
+        let context = write_context_for(dir.path());
+
+        let response = handle_request(
+            JsonRpcRequest {
+                jsonrpc: "2.0".to_string(),
+                id: json!("req-read"),
+                method: "files/read".to_string(),
+                params: json!({ "path": file.to_string_lossy() }),
+            },
+            &policy,
+            Some(&context),
+        );
+
+        assert!(response.error.is_none());
+
+        let logs = context
+            .audit_log_store
+            .list(ListLogsInput {
+                r#type: Some("file.read".to_string()),
+                request_id: Some("req-read".to_string()),
+                limit: Some(10),
+            })
+            .unwrap();
+
+        assert_eq!(logs.len(), 1);
+        assert_eq!(logs[0].level, LogLevel::Info);
     }
 }
