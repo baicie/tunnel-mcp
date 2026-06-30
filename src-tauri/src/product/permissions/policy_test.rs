@@ -27,7 +27,7 @@ mod tests {
         )])
         .unwrap();
         let decision = policy.check_path(&file, PermissionAccess::Read);
-        assert!(decision.allowed);
+        assert!(decision.allowed, "reason={:?}", decision.reason);
         assert!(!decision.require_approval);
     }
 

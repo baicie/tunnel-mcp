@@ -67,8 +67,11 @@ pub fn sensitive_globs() -> anyhow::Result<GlobSet> {
     Ok(builder.build()?)
 }
 
-pub fn contains_glob_meta(value: &str) -> bool {
-    value.contains('*') || value.contains('?') || value.contains('[') || value.contains('{')
+fn glob_meta_offset(value: &str) -> Option<usize> {
+    value
+        .as_bytes()
+        .iter()
+        .position(|byte| matches!(byte, b'*' | b'?' | b'[' | b'{'))
 }
 
 pub fn normalize_scope_pattern(pattern: &str) -> anyhow::Result<String> {
@@ -78,22 +81,40 @@ pub fn normalize_scope_pattern(pattern: &str) -> anyhow::Result<String> {
     }
 
     let expanded = expand_home(trimmed);
-    let normalized = expanded.replace('\\', "/");
+    let slash_normalized = expanded.replace('\\', "/");
 
-    if contains_glob_meta(&normalized) {
-        Glob::new(&normalized).context("invalid permission glob")?;
-        return Ok(normalized);
+    if let Some(idx) = glob_meta_offset(&slash_normalized) {
+        let prefix = &slash_normalized[..idx];
+        let suffix = &slash_normalized[idx..];
+
+        let normalized_prefix = prefix_canonicalized_or_raw(prefix);
+        let combined = format!("{normalized_prefix}{suffix}");
+
+        Glob::new(&combined).context("invalid permission glob")?;
+        return Ok(combined);
     }
 
-    let canonical = PathBuf::from(&expanded)
-        .canonicalize()
-        .with_context(|| format!("invalid permission path: {expanded}"))?;
-
-    if canonical.is_dir() {
-        return Ok(format!("{}/**", normalize_path_text(&canonical)));
+    if let Ok(canonical) = PathBuf::from(&expanded).canonicalize() {
+        if canonical.is_dir() {
+            return Ok(format!("{}/**", normalize_path_text(&canonical)));
+        }
+        return Ok(normalize_path_text(&canonical));
     }
 
-    Ok(normalize_path_text(&canonical))
+    Ok(slash_normalized)
+}
+
+fn prefix_canonicalized_or_raw(prefix: &str) -> String {
+    let trimmed = prefix.trim_end_matches('/');
+
+    if trimmed.is_empty() {
+        return String::new();
+    }
+
+    match PathBuf::from(trimmed).canonicalize() {
+        Ok(canonical) => format!("{}/", normalize_path_text(&canonical)),
+        Err(_) => format!("{prefix}/"),
+    }
 }
 
 pub fn pattern_to_glob(pattern: &str) -> anyhow::Result<Glob> {
