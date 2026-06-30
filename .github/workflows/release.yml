@@ -17,9 +17,16 @@ jobs:
           - name: macos-arm64
             platform: macos-latest
             args: --target aarch64-apple-darwin
+            verify_platform: macos
+            target: aarch64-apple-darwin
+            bundle_path: src-tauri/target/aarch64-apple-darwin/release/bundle/**
           - name: windows-x64
             platform: windows-latest
             args: ""
+            verify_platform: windows
+            target: ""
+            bundle_path: src-tauri/target/release/bundle/**
+
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -58,11 +65,19 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - name: Verify release artifacts (no target)
+        if: matrix.target == ''
+        run: pnpm release:verify-artifacts -- --platform ${{ matrix.verify_platform }}
+
+      - name: Verify release artifacts (with target)
+        if: matrix.target != ''
+        run: pnpm release:verify-artifacts -- --platform ${{ matrix.verify_platform }} --target ${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v4
         with:
           name: tunnel-mcp-${{ matrix.name }}
-          path: src-tauri/target/release/bundle/**
+          path: ${{ matrix.bundle_path }}
+          if-no-files-found: error
 
   publish:
     needs: build
@@ -72,6 +87,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: release-artifacts
+          merge-multiple: true
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

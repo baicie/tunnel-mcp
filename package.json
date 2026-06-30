@@ -38,6 +38,8 @@
     "icons:check": "node scripts/generate-icons.mjs --check",
     "release:smoke": "node scripts/release-smoke.mjs",
     "release:verify-artifacts": "node scripts/verify-release-artifacts.mjs",
+    "release:verify-artifacts:macos-arm64": "node scripts/verify-release-artifacts.mjs --platform macos --target aarch64-apple-darwin",
+    "release:verify-artifacts:windows-x64": "node scripts/verify-release-artifacts.mjs --platform windows",
     "release:check": "pnpm release:smoke && pnpm tauri build && pnpm release:verify-artifacts"
   },
   "keywords": [],
