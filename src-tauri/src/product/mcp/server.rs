@@ -1,6 +1,6 @@
 use super::protocol::{JsonRpcRequest, JsonRpcResponse};
 use super::resources::ReadPolicy;
-use super::tools::{handle_request, MCP_TOOLS};
+use super::tools::{handle_request, McpWriteContext, MCP_TOOLS};
 use crate::product::status::McpServerStatus;
 use anyhow::anyhow;
 use axum::{extract::State, routing::post, Json, Router};
@@ -14,6 +14,7 @@ use tokio::sync::oneshot;
 #[derive(Clone)]
 struct McpState {
     policy: Arc<dyn ReadPolicy>,
+    write_context: Arc<McpWriteContext>,
 }
 
 #[derive(Default)]
@@ -35,6 +36,7 @@ impl McpServerManager {
         &self,
         port: u16,
         policy: Arc<dyn ReadPolicy>,
+        write_context: Arc<McpWriteContext>,
     ) -> anyhow::Result<McpServerStatus> {
         let authorized_roots = policy.authorized_roots();
 
@@ -67,7 +69,10 @@ impl McpServerManager {
 
         let app = Router::new()
             .route("/mcp", post(handle_http_mcp))
-            .with_state(McpState { policy });
+            .with_state(McpState {
+                policy,
+                write_context,
+            });
 
         let (tx, rx) = oneshot::channel::<()>();
 
@@ -151,5 +156,9 @@ async fn handle_http_mcp(
     State(state): State<McpState>,
     Json(request): Json<JsonRpcRequest>,
 ) -> Json<JsonRpcResponse> {
-    Json(handle_request(request, state.policy.as_ref()))
+    Json(handle_request(
+        request,
+        state.policy.as_ref(),
+        Some(state.write_context.as_ref()),
+    ))
 }

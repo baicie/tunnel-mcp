@@ -30,12 +30,34 @@ mod tests {
                 params: json!({}),
             },
             &policy,
+            None,
         );
         assert!(response.error.is_none());
         assert!(response.result.unwrap()["tools"]
             .as_array()
             .unwrap()
             .contains(&json!("files/read")));
+    }
+
+    #[test]
+    fn tools_list_includes_files_write() {
+        let dir = tempdir().unwrap();
+        let policy = policy_for_dir(dir.path());
+
+        let response = handle_request(
+            JsonRpcRequest {
+                jsonrpc: "2.0".to_string(),
+                id: json!(1),
+                method: "tools/list".to_string(),
+                params: json!({}),
+            },
+            &policy,
+            None,
+        );
+
+        let tools = response.result.unwrap()["tools"].as_array().unwrap().clone();
+
+        assert!(tools.contains(&json!("files.write")));
     }
 
     #[test]
@@ -50,6 +72,7 @@ mod tests {
                 params: json!({}),
             },
             &policy,
+            None,
         );
         assert!(response.error.is_some());
     }
@@ -67,6 +90,7 @@ mod tests {
                 params: json!({}),
             },
             &policy,
+            None,
         );
 
         assert!(response.error.is_none());
@@ -93,6 +117,26 @@ mod tests {
                 params: json!({ "path": file }),
             },
             &policy,
+            None,
+        );
+
+        assert!(response.error.is_some());
+    }
+
+    #[test]
+    fn files_write_without_context_returns_error() {
+        let dir = tempdir().unwrap();
+        let policy = policy_for_dir(dir.path());
+
+        let response = handle_request(
+            JsonRpcRequest {
+                jsonrpc: "2.0".to_string(),
+                id: json!(1),
+                method: "files.write".to_string(),
+                params: json!({ "path": dir.path().join("a.txt"), "content": "x" }),
+            },
+            &policy,
+            None,
         );
 
         assert!(response.error.is_some());

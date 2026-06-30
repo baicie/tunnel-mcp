@@ -10,9 +10,16 @@ pub enum ApprovalStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "lowercase")]
+pub enum ApprovalSource {
+    Mcp,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ApprovalTool {
+    #[serde(rename = "files.write")]
     FilesWrite,
+    #[serde(rename = "files.patch")]
     FilesPatch,
 }
 
@@ -20,11 +27,12 @@ pub enum ApprovalTool {
 #[serde(rename_all = "camelCase")]
 pub struct ApprovalRequest {
     pub id: String,
-    pub source: String,
+    pub source: ApprovalSource,
     pub tool: ApprovalTool,
     pub target_path: String,
     pub summary: String,
     pub diff: Option<String>,
+    pub content_sha256: Option<String>,
     pub created_at: i64,
     pub expires_at: i64,
     pub status: ApprovalStatus,
@@ -36,5 +44,6 @@ pub struct NewApprovalRequest {
     pub target_path: String,
     pub summary: String,
     pub diff: Option<String>,
+    pub content_sha256: Option<String>,
     pub ttl_seconds: i64,
 }

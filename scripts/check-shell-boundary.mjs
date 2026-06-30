@@ -127,6 +127,7 @@ const allowedInvokeFiles = [
   "src/lib/api/tunnel.ts",
   "src/lib/api/mcp.ts",
   "src/lib/api/permissions.ts",
+  "src/lib/api/approvals.ts",
 ];
 
 function allowedInvokeRel(rel) {

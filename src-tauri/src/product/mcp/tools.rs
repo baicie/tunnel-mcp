@@ -2,6 +2,10 @@ use super::protocol::{JsonRpcRequest, JsonRpcResponse};
 use super::resources::{
     list_authorized_resources, list_files, read_file, read_resource, ReadPolicy,
 };
+use super::write_tools::{handle_files_write, WriteToolResult};
+use crate::product::approvals::store::ApprovalStore;
+use crate::product::approvals::write_log::WriteLogStore;
+use crate::product::permissions::policy::PermissionPolicy;
 use log::warn;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
@@ -11,9 +15,20 @@ pub const MCP_TOOLS: &[&str] = &[
     "resources/read",
     "files/list",
     "files/read",
+    "files.write",
 ];
 
-pub fn handle_request(request: JsonRpcRequest, policy: &dyn ReadPolicy) -> JsonRpcResponse {
+pub struct McpWriteContext {
+    pub permission_policy: PermissionPolicy,
+    pub approval_store: ApprovalStore,
+    pub write_log_store: WriteLogStore,
+}
+
+pub fn handle_request(
+    request: JsonRpcRequest,
+    policy: &dyn ReadPolicy,
+    write_context: Option<&McpWriteContext>,
+) -> JsonRpcResponse {
     if request.jsonrpc != "2.0" {
         return JsonRpcResponse::err(request.id, -32600, "invalid jsonrpc version");
     }
@@ -26,6 +41,7 @@ pub fn handle_request(request: JsonRpcRequest, policy: &dyn ReadPolicy) -> JsonR
         ),
         "resources/read" => handle_resource_read(request, policy),
         "files/list" | "files/read" => handle_file_method(request, policy),
+        "files.write" => handle_write_method(request, write_context),
         _ => JsonRpcResponse::err(request.id, -32601, "method not found"),
     }
 }
@@ -68,6 +84,26 @@ fn handle_file_method(request: JsonRpcRequest, policy: &dyn ReadPolicy) -> JsonR
             log_mcp_denial_if_needed(&request.method, &path, &err.to_string());
             JsonRpcResponse::err(request.id, -32000, err.to_string())
         }
+    }
+}
+
+fn handle_write_method(
+    request: JsonRpcRequest,
+    write_context: Option<&McpWriteContext>,
+) -> JsonRpcResponse {
+    let Some(context) = write_context else {
+        return JsonRpcResponse::err(request.id, -32000, "write context is not configured");
+    };
+
+    match handle_files_write(
+        &request.params,
+        &context.permission_policy,
+        &context.approval_store,
+        &context.write_log_store,
+    ) {
+        Ok(WriteToolResult::ApprovalRequired(value)) => JsonRpcResponse::ok(request.id, value),
+        Ok(WriteToolResult::Written(value)) => JsonRpcResponse::ok(request.id, value),
+        Err(err) => JsonRpcResponse::err(request.id, -32000, err.to_string()),
     }
 }
 

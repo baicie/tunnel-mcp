@@ -1,5 +1,9 @@
+use crate::product::approvals::store::ApprovalStore;
+use crate::product::approvals::write_log::WriteLogStore;
 use crate::product::mcp::resources::ReadPolicy;
 use crate::product::mcp::server::McpServerManager;
+use crate::product::mcp::tools::McpWriteContext;
+use crate::product::permissions::policy::PermissionPolicy;
 use crate::product::permissions::read_policy::PermissionReadPolicy;
 use crate::product::permissions::store::PermissionStore;
 use crate::product::settings::{SettingsStore, TunnelSettings};
@@ -22,6 +26,20 @@ fn permission_path(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|err| err.to_string())
 }
 
+fn approvals_path(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map(|dir| dir.join("approvals.json"))
+        .map_err(|err| err.to_string())
+}
+
+fn write_log_path(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map(|dir| dir.join("write-log.json"))
+        .map_err(|err| err.to_string())
+}
+
 fn load_settings(app: &AppHandle) -> Result<TunnelSettings, String> {
     let store = SettingsStore::new(settings_path(app)?);
     store.load().map_err(|err| err.to_string())
@@ -37,6 +55,20 @@ fn build_read_policy(app: &AppHandle) -> Result<Arc<PermissionReadPolicy>, Strin
         .map_err(|err| err.to_string())
 }
 
+fn build_write_context(app: &AppHandle) -> Result<Arc<McpWriteContext>, String> {
+    let scopes = PermissionStore::new(permission_path(app)?)
+        .list()
+        .map_err(|err| err.to_string())?;
+
+    let permission_policy = PermissionPolicy::new(scopes).map_err(|err| err.to_string())?;
+
+    Ok(Arc::new(McpWriteContext {
+        permission_policy,
+        approval_store: ApprovalStore::new(approvals_path(app)?),
+        write_log_store: WriteLogStore::new(write_log_path(app)?),
+    }))
+}
+
 #[tauri::command]
 pub async fn start_mcp_server(
     app: AppHandle,
@@ -44,9 +76,10 @@ pub async fn start_mcp_server(
 ) -> Result<McpServerStatus, String> {
     let settings = load_settings(&app)?;
     let policy = build_read_policy(&app)?;
+    let write_context = build_write_context(&app)?;
 
     manager
-        .start(settings.mcp_server_port, policy)
+        .start(settings.mcp_server_port, policy, write_context)
         .await
         .map_err(|err| err.to_string())
 }

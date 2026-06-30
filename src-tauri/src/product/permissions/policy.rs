@@ -209,4 +209,51 @@ impl PermissionPolicy {
             reason: DENY_REASON_NOT_AUTHORIZED.to_string(),
         }
     }
+
+    /// Check a write target that may not exist yet. For new files the
+    /// policy is evaluated against the canonicalized parent directory
+    /// joined with the file name, so creating a file inside an allowed
+    /// scope does not require the file to pre-exist.
+    pub fn check_write_target(&self, path: &Path) -> PermissionDecision {
+        let target = if path.exists() {
+            match path.canonicalize() {
+                Ok(value) => value,
+                Err(_) => {
+                    return PermissionDecision {
+                        allowed: false,
+                        require_approval: false,
+                        reason: "invalid path".to_string(),
+                    };
+                }
+            }
+        } else {
+            let Some(parent) = path.parent() else {
+                return PermissionDecision {
+                    allowed: false,
+                    require_approval: false,
+                    reason: "invalid path".to_string(),
+                };
+            };
+
+            let Ok(parent) = parent.canonicalize() else {
+                return PermissionDecision {
+                    allowed: false,
+                    require_approval: false,
+                    reason: "invalid parent path".to_string(),
+                };
+            };
+
+            let Some(file_name) = path.file_name() else {
+                return PermissionDecision {
+                    allowed: false,
+                    require_approval: false,
+                    reason: "invalid path".to_string(),
+                };
+            };
+
+            parent.join(file_name)
+        };
+
+        self.check_path(&target, PermissionAccess::Write)
+    }
 }
