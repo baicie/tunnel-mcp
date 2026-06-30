@@ -1,3 +1,4 @@
+use crate::product::security::path_guard;
 use anyhow::{anyhow, Context};
 use serde::Serialize;
 use std::fs;
@@ -117,6 +118,8 @@ pub fn list_authorized_resources(policy: &dyn ReadPolicy) -> Vec<ResourceDescrip
 }
 
 pub fn read_resource(path: &Path, policy: &dyn ReadPolicy) -> anyhow::Result<ResourceDescriptor> {
+    path_guard::reject_traversal(path)?;
+
     if !policy.can_read(path) {
         return Err(anyhow!("permission denied"));
     }
@@ -142,6 +145,8 @@ pub fn read_resource(path: &Path, policy: &dyn ReadPolicy) -> anyhow::Result<Res
 }
 
 pub fn list_files(path: &Path, policy: &dyn ReadPolicy) -> anyhow::Result<Vec<FileEntry>> {
+    path_guard::reject_traversal(path)?;
+
     if !policy.can_read(path) {
         return Err(anyhow!("permission denied"));
     }
@@ -178,6 +183,8 @@ pub fn list_files(path: &Path, policy: &dyn ReadPolicy) -> anyhow::Result<Vec<Fi
 }
 
 pub fn read_file(path: &Path, policy: &dyn ReadPolicy) -> anyhow::Result<FileReadResult> {
+    path_guard::reject_traversal(path)?;
+
     if !policy.can_read(path) {
         return Err(anyhow!("permission denied"));
     }

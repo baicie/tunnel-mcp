@@ -1,4 +1,5 @@
 use super::scope::{PermissionAccess, PermissionDecision, PermissionKind, PermissionScope};
+use crate::product::security::path_guard;
 use anyhow::{anyhow, Context};
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use log::warn;
@@ -135,19 +136,12 @@ impl PermissionPolicy {
         })
     }
 
-    pub fn check_path(&self, path: &Path, requested: PermissionAccess) -> PermissionDecision {
-        let canonical = match normalize_for_match(path) {
-            Ok(value) => value,
-            Err(_) => {
-                return PermissionDecision {
-                    allowed: false,
-                    require_approval: false,
-                    reason: "invalid path".to_string(),
-                };
-            }
-        };
-
-        let target = normalize_path_text(&canonical);
+    fn check_canonical_target(
+        &self,
+        canonical: &Path,
+        requested: PermissionAccess,
+    ) -> PermissionDecision {
+        let target = normalize_path_text(canonical);
 
         if self.denylist.is_match(&target) {
             warn!(
@@ -210,50 +204,41 @@ impl PermissionPolicy {
         }
     }
 
-    /// Check a write target that may not exist yet. For new files the
-    /// policy is evaluated against the canonicalized parent directory
-    /// joined with the file name, so creating a file inside an allowed
-    /// scope does not require the file to pre-exist.
-    pub fn check_write_target(&self, path: &Path) -> PermissionDecision {
-        let target = if path.exists() {
-            match path.canonicalize() {
-                Ok(value) => value,
-                Err(_) => {
-                    return PermissionDecision {
-                        allowed: false,
-                        require_approval: false,
-                        reason: "invalid path".to_string(),
-                    };
-                }
+    pub fn check_path(&self, path: &Path, requested: PermissionAccess) -> PermissionDecision {
+        if let Err(err) = path_guard::reject_traversal(path) {
+            return PermissionDecision {
+                allowed: false,
+                require_approval: false,
+                reason: err.to_string(),
+            };
+        }
+
+        let canonical = match normalize_for_match(path) {
+            Ok(value) => value,
+            Err(_) => {
+                return PermissionDecision {
+                    allowed: false,
+                    require_approval: false,
+                    reason: "invalid path".to_string(),
+                };
             }
-        } else {
-            let Some(parent) = path.parent() else {
-                return PermissionDecision {
-                    allowed: false,
-                    require_approval: false,
-                    reason: "invalid path".to_string(),
-                };
-            };
-
-            let Ok(parent) = parent.canonicalize() else {
-                return PermissionDecision {
-                    allowed: false,
-                    require_approval: false,
-                    reason: "invalid parent path".to_string(),
-                };
-            };
-
-            let Some(file_name) = path.file_name() else {
-                return PermissionDecision {
-                    allowed: false,
-                    require_approval: false,
-                    reason: "invalid path".to_string(),
-                };
-            };
-
-            parent.join(file_name)
         };
 
-        self.check_path(&target, PermissionAccess::Write)
+        self.check_canonical_target(&canonical, requested)
+    }
+
+    pub fn check_write_target(&self, path: &Path) -> PermissionDecision {
+        let target = match path_guard::canonicalize_existing_or_parent(path) {
+            Ok(value) => value,
+            Err(err) => {
+                return PermissionDecision {
+                    allowed: false,
+                    require_approval: false,
+                    reason: err.to_string(),
+                };
+            }
+        };
+
+        self.check_canonical_target(&target, PermissionAccess::Write)
     }
 }

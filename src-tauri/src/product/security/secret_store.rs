@@ -9,13 +9,15 @@ pub fn save_openai_key(
 ) -> anyhow::Result<()> {
     match value {
         Some(value) if !value.trim().is_empty() => {
-            secret_store.set_secret(OPENAI_KEY_USER, &value)
+            secret_store.set_secret(OPENAI_KEY_USER, value.trim())
         }
-        _ => {
-            secret_store.delete_secret(OPENAI_KEY_USER)?;
-            Ok(())
-        }
+        _ => Ok(()),
     }
+}
+
+#[allow(dead_code)]
+pub fn clear_openai_key(secret_store: &dyn SecretStore) -> anyhow::Result<()> {
+    secret_store.delete_secret(OPENAI_KEY_USER)
 }
 
 pub fn load_openai_key(secret_store: &dyn SecretStore) -> anyhow::Result<Option<String>> {
@@ -25,6 +27,7 @@ pub fn load_openai_key(secret_store: &dyn SecretStore) -> anyhow::Result<Option<
 pub trait SecretStore: Send + Sync {
     fn set_secret(&self, key: &str, value: &str) -> anyhow::Result<()>;
     fn get_secret(&self, key: &str) -> anyhow::Result<Option<String>>;
+    #[allow(dead_code)]
     fn delete_secret(&self, key: &str) -> anyhow::Result<()>;
 }
 
@@ -66,7 +69,10 @@ mod tests {
 
     impl SecretStore for MemorySecretStore {
         fn set_secret(&self, key: &str, value: &str) -> anyhow::Result<()> {
-            self.0.lock().unwrap().insert(key.to_string(), value.to_string());
+            self.0
+                .lock()
+                .unwrap()
+                .insert(key.to_string(), value.to_string());
             Ok(())
         }
 
@@ -90,5 +96,31 @@ mod tests {
         );
         store.delete_secret("openai").unwrap();
         assert_eq!(store.get_secret("openai").unwrap(), None);
+    }
+
+    #[test]
+    fn blank_value_does_not_delete_existing_key() {
+        let store = MemorySecretStore::default();
+        store.set_secret("openai-api-key", "sk-existing").unwrap();
+        super::save_openai_key(&store, Some("   ".to_string())).unwrap();
+        assert_eq!(
+            store.get_secret("openai-api-key").unwrap(),
+            Some("sk-existing".to_string())
+        );
+    }
+
+    #[test]
+    fn blank_value_does_not_create_key_when_absent() {
+        let store = MemorySecretStore::default();
+        super::save_openai_key(&store, None::<String>).unwrap();
+        assert_eq!(store.get_secret("openai-api-key").unwrap(), None);
+    }
+
+    #[test]
+    fn clear_openai_key_removes_key() {
+        let store = MemorySecretStore::default();
+        store.set_secret("openai-api-key", "sk-test").unwrap();
+        super::clear_openai_key(&store).unwrap();
+        assert_eq!(store.get_secret("openai-api-key").unwrap(), None);
     }
 }

@@ -2,7 +2,8 @@ use super::request::ApprovalTool;
 use super::store::ApprovalStore;
 use super::write_log::{WriteLogEntry, WriteLogStatus, WriteLogStore};
 use crate::product::permissions::policy::PermissionPolicy;
-use anyhow::{anyhow, bail, Context};
+use crate::product::security::path_guard;
+use anyhow::bail;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -14,21 +15,7 @@ pub fn sha256_hex(content: &str) -> String {
 }
 
 pub fn canonical_write_target(path: &Path) -> anyhow::Result<PathBuf> {
-    if path.exists() {
-        return path.canonicalize().context("canonicalize target file");
-    }
-
-    let parent = path
-        .parent()
-        .ok_or_else(|| anyhow!("target path has no parent"))?
-        .canonicalize()
-        .context("canonicalize target parent")?;
-
-    let file_name = path
-        .file_name()
-        .ok_or_else(|| anyhow!("target path has no file name"))?;
-
-    Ok(parent.join(file_name))
+    path_guard::canonicalize_existing_or_parent(path)
 }
 
 pub fn write_file_with_approval(

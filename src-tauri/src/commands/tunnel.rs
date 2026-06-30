@@ -43,9 +43,7 @@ pub fn save_tunnel_settings(
     let mut settings_without_key = settings;
     settings_without_key.openai_api_key = None;
 
-    let saved = store
-        .save(settings_without_key)
-        .map_err(map_error)?;
+    let saved = store.save(settings_without_key).map_err(map_error)?;
 
     if let Err(err) = save_openai_key(&KeyringSecretStore, key_to_save) {
         log::warn!("failed to save OpenAI key to keyring: {}", err);

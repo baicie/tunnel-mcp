@@ -2,6 +2,7 @@ use crate::product::logs::audit::append_audit_log;
 use crate::product::logs::event::LogLevel;
 use crate::product::logs::store::AuditLogStore;
 use crate::product::security::local_token::LocalTokenStore;
+use crate::product::security::secret_store::{load_openai_key, KeyringSecretStore};
 use crate::product::settings::SettingsStore;
 use crate::product::status::TunnelStatus;
 use crate::product::tunnel::client_download::{
@@ -39,7 +40,17 @@ fn audit_store(app: &AppHandle) -> Result<AuditLogStore, String> {
 
 fn load_settings(app: &AppHandle) -> Result<crate::product::settings::TunnelSettings, String> {
     let store = SettingsStore::new(settings_path(app)?);
-    store.load().map_err(|err| err.to_string())
+    let mut settings = store.load().map_err(|err| err.to_string())?;
+    settings.openai_api_key =
+        load_openai_key(&KeyringSecretStore).map_err(|err| err.to_string())?;
+    Ok(settings)
+}
+
+fn load_local_token(app: &AppHandle) -> Result<String, String> {
+    LocalTokenStore::new(local_token_path(app)?)
+        .get_or_create()
+        .map(|token| token.token)
+        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -82,7 +93,9 @@ pub async fn install_tunnel_client(
     settings.tunnel_client_version = Some(installed.version);
 
     let store = SettingsStore::new(settings_path(&app)?);
-    let saved = store.save(settings).map_err(|err| err.to_string())?;
+    let saved = store
+        .save(settings.clone())
+        .map_err(|err| err.to_string())?;
 
     append_audit_log(
         &audit,
@@ -96,7 +109,7 @@ pub async fn install_tunnel_client(
         }),
     );
 
-    manager.status(&saved).map_err(|err| err.to_string())
+    manager.status(&settings).map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -106,9 +119,7 @@ pub fn start_tunnel_client(
 ) -> Result<TunnelStatus, String> {
     let audit = audit_store(&app)?;
     let settings = load_settings(&app)?;
-    let local_token = LocalTokenStore::new(local_token_path(&app)?)
-        .get_or_create()
-        .ok();
+    let token = load_local_token(&app)?;
 
     append_audit_log(
         &audit,
@@ -123,7 +134,7 @@ pub fn start_tunnel_client(
         }),
     );
 
-    match manager.start_with_token(&settings, local_token.map(|t| t.token)) {
+    match manager.start_with_token(&settings, Some(token)) {
         Ok(status) => {
             append_audit_log(
                 &audit,
@@ -206,9 +217,7 @@ pub fn restart_tunnel_client(
 ) -> Result<TunnelStatus, String> {
     let audit = audit_store(&app)?;
     let settings = load_settings(&app)?;
-    let local_token = LocalTokenStore::new(local_token_path(&app)?)
-        .get_or_create()
-        .ok();
+    let token = load_local_token(&app)?;
 
     append_audit_log(
         &audit,
@@ -219,7 +228,7 @@ pub fn restart_tunnel_client(
         json!({}),
     );
 
-    match manager.restart_with_token(&settings, local_token.map(|t| t.token)) {
+    match manager.restart_with_token(&settings, Some(token)) {
         Ok(status) => {
             append_audit_log(
                 &audit,

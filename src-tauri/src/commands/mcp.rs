@@ -99,7 +99,12 @@ pub async fn start_mcp_server(
     let write_context = build_write_context(&app)?;
 
     match manager
-        .start(settings.mcp_server_port, policy, write_context, local_token_path(&app)?)
+        .start(
+            settings.mcp_server_port,
+            policy,
+            write_context,
+            local_token_path(&app)?,
+        )
         .await
     {
         Ok(status) => {

@@ -18,6 +18,7 @@ pub enum LogLevel {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct TunnelSettings {
+    #[serde(default, skip_serializing)]
     pub openai_api_key: Option<String>,
     pub tunnel_id: Option<String>,
     pub tunnel_client_path: Option<String>,
@@ -119,13 +120,7 @@ impl SettingsStore {
             fs::create_dir_all(parent)?;
         }
 
-        let existing_openai_key = if self.path.exists() {
-            self.load()?.openai_api_key
-        } else {
-            None
-        };
-
-        let normalized = normalize_settings_for_save(next, existing_openai_key);
+        let normalized = normalize_settings_for_save(next);
 
         let file = SettingsFile {
             version: 1,
@@ -171,18 +166,10 @@ fn normalize_loaded_settings(settings: TunnelSettings) -> TunnelSettings {
     }
 }
 
-fn normalize_settings_for_save(
-    settings: TunnelSettings,
-    existing_openai_key: Option<String>,
-) -> TunnelSettings {
-    let normalized = normalize_loaded_settings(settings);
-
-    TunnelSettings {
-        openai_api_key: normalized
-            .openai_api_key
-            .or_else(|| normalize_optional_string(existing_openai_key)),
-        ..normalized
-    }
+fn normalize_settings_for_save(settings: TunnelSettings) -> TunnelSettings {
+    let mut normalized = normalize_loaded_settings(settings);
+    normalized.openai_api_key = None;
+    normalized
 }
 
 pub fn to_public_settings(settings: TunnelSettings) -> PublicTunnelSettings {
@@ -278,7 +265,7 @@ mod tests {
     }
 
     #[test]
-    fn store_saves_and_loads_settings() {
+    fn store_saves_and_loads_settings_without_key() {
         let dir = tempdir().unwrap();
         let store = SettingsStore::new(dir.path().join("settings.json"));
 
@@ -295,18 +282,31 @@ mod tests {
         };
 
         store.save(settings.clone()).unwrap();
-        assert_eq!(store.load().unwrap(), settings);
+
+        let loaded = store.load().unwrap();
+        assert_eq!(loaded.openai_api_key, None);
+        assert_eq!(loaded.tunnel_id, settings.tunnel_id);
+        assert_eq!(loaded.tunnel_client_path, settings.tunnel_client_path);
+        assert_eq!(loaded.tunnel_client_version, settings.tunnel_client_version);
+        assert_eq!(loaded.resource_root, settings.resource_root);
+        assert_eq!(loaded.mcp_server_port, settings.mcp_server_port);
+        assert_eq!(loaded.log_level, settings.log_level);
+        assert_eq!(loaded.auto_start, settings.auto_start);
+        assert_eq!(
+            loaded.auto_update_tunnel_client,
+            settings.auto_update_tunnel_client
+        );
     }
 
     #[test]
-    fn store_preserves_existing_key_when_saved_key_is_blank() {
+    fn store_never_writes_openai_key_to_json() {
         let dir = tempdir().unwrap();
         let store = SettingsStore::new(dir.path().join("settings.json"));
 
         store
             .save(TunnelSettings {
-                openai_api_key: Some("sk-existing".to_string()),
-                tunnel_id: Some("old".to_string()),
+                openai_api_key: Some("sk-secret".to_string()),
+                tunnel_id: Some("tun_test".to_string()),
                 tunnel_client_path: None,
                 tunnel_client_version: None,
                 resource_root: None,
@@ -317,26 +317,9 @@ mod tests {
             })
             .unwrap();
 
-        let saved = store
-            .save(TunnelSettings {
-                openai_api_key: Some("   ".to_string()),
-                tunnel_id: Some("new".to_string()),
-                tunnel_client_path: Some("   ".to_string()),
-                tunnel_client_version: Some("   ".to_string()),
-                resource_root: Some(" /tmp/project ".to_string()),
-                mcp_server_port: 0,
-                log_level: LogLevel::Warn,
-                auto_start: true,
-                auto_update_tunnel_client: false,
-            })
-            .unwrap();
-
-        assert_eq!(saved.openai_api_key, Some("sk-existing".to_string()));
-        assert_eq!(saved.tunnel_id, Some("new".to_string()));
-        assert_eq!(saved.tunnel_client_path, None);
-        assert_eq!(saved.tunnel_client_version, None);
-        assert_eq!(saved.resource_root, Some("/tmp/project".to_string()));
-        assert_eq!(saved.mcp_server_port, 17891);
-        assert_eq!(saved.log_level, LogLevel::Warn);
+        let raw = std::fs::read_to_string(dir.path().join("settings.json")).unwrap();
+        assert!(!raw.contains("sk-secret"));
+        assert!(!raw.contains("sk-test"));
+        assert_eq!(store.load().unwrap().openai_api_key, None);
     }
 }

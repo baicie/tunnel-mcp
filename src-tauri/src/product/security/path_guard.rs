@@ -1,8 +1,6 @@
 use anyhow::{anyhow, bail};
-use std::fs;
 use std::path::{Component, Path, PathBuf};
 
-#[allow(dead_code)]
 pub fn reject_traversal(path: &Path) -> anyhow::Result<()> {
     for component in path.components() {
         if matches!(component, Component::ParentDir) {
@@ -12,48 +10,32 @@ pub fn reject_traversal(path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[allow(dead_code)]
 pub fn canonicalize_existing_or_parent(path: &Path) -> anyhow::Result<PathBuf> {
     reject_traversal(path)?;
+
     if path.exists() {
         return path.canonicalize().map_err(Into::into);
     }
+
     let parent = path.parent().ok_or_else(|| anyhow!("path has no parent"))?;
+    reject_traversal(parent)?;
+
     let canonical_parent = parent.canonicalize()?;
-    let name = path.file_name().ok_or_else(|| anyhow!("path has no file name"))?;
+    let name = path
+        .file_name()
+        .ok_or_else(|| anyhow!("path has no file name"))?;
+
     Ok(canonical_parent.join(name))
 }
 
 #[allow(dead_code)]
-pub fn ensure_under_root(path: &Path, root: &Path) -> anyhow::Result<()> {
+pub fn ensure_under_root(path: &Path, root: &Path) -> anyhow::Result<PathBuf> {
     let path = canonicalize_existing_or_parent(path)?;
     let root = root.canonicalize()?;
     if !path.starts_with(&root) {
         bail!("path escapes authorized root");
     }
-    Ok(())
-}
-
-#[allow(dead_code)]
-pub fn reject_symlink_traversal(path: &Path) -> anyhow::Result<PathBuf> {
-    reject_traversal(path)?;
-    let canonical = path.canonicalize().map_err(Into::into);
-    match canonical {
-        Ok(canon) => {
-            if !canon.exists() {
-                bail!("symlink target does not exist");
-            }
-            Ok(canon)
-        }
-        Err(_) if path.exists() => {
-            let meta = fs::symlink_metadata(path)?;
-            if meta.file_type().is_symlink() {
-                bail!("path is a symlink that cannot be resolved");
-            }
-            Err(anyhow!("failed to canonicalize path"))
-        }
-        Err(err) => Err(err),
-    }
+    Ok(path)
 }
 
 #[cfg(test)]
@@ -82,5 +64,19 @@ mod tests {
         let file = root.path().join("a.txt");
         fs::write(&file, "hello").unwrap();
         assert!(ensure_under_root(&file, root.path()).is_ok());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn ensure_under_root_rejects_symlink_escape() {
+        use std::os::unix::fs::symlink;
+
+        let root = tempdir().unwrap();
+        let outside = tempdir().unwrap();
+        let outside_file = outside.path().join("secret.txt");
+        fs::write(&outside_file, "secret").unwrap();
+
+        symlink(&outside_file, root.path().join("link.txt")).unwrap();
+        assert!(ensure_under_root(&root.path().join("link.txt"), root.path()).is_err());
     }
 }

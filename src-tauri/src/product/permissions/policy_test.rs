@@ -173,4 +173,66 @@ mod tests {
         assert!(decision.allowed);
         assert!(decision.require_approval);
     }
+
+    #[test]
+    fn write_target_rejects_parent_dir_traversal() {
+        let dir = tempdir().unwrap();
+        let policy = PermissionPolicy::new(vec![scope(
+            format!("{}/**", dir.path().display()),
+            PermissionAccess::Readwrite,
+            true,
+        )])
+        .unwrap();
+        let decision = policy.check_write_target(&dir.path().join("../evil.txt"));
+        assert!(!decision.allowed);
+        assert!(decision.reason.contains("path traversal"));
+    }
+
+    #[test]
+    fn write_target_allows_new_file_inside_authorized_scope() {
+        let dir = tempdir().unwrap();
+        let policy = PermissionPolicy::new(vec![scope(
+            format!("{}/**", dir.path().display()),
+            PermissionAccess::Readwrite,
+            true,
+        )])
+        .unwrap();
+        let decision = policy.check_write_target(&dir.path().join("new.txt"));
+        assert!(decision.allowed);
+        assert!(decision.require_approval);
+    }
+
+    #[test]
+    fn write_target_rejects_path_outside_scope() {
+        let allowed = tempdir().unwrap();
+        let denied = tempdir().unwrap();
+        let policy = PermissionPolicy::new(vec![scope(
+            format!("{}/**", allowed.path().display()),
+            PermissionAccess::Readwrite,
+            true,
+        )])
+        .unwrap();
+        let decision = policy.check_write_target(&denied.path().join("new.txt"));
+        assert!(!decision.allowed);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_target_rejects_symlink_escape() {
+        use std::os::unix::fs::symlink;
+        let allowed = tempdir().unwrap();
+        let denied = tempdir().unwrap();
+        let secret = denied.path().join("secret.txt");
+        fs::write(&secret, "secret").unwrap();
+        let link = allowed.path().join("link.txt");
+        symlink(&secret, &link).unwrap();
+        let policy = PermissionPolicy::new(vec![scope(
+            format!("{}/*", allowed.path().display()),
+            PermissionAccess::Readwrite,
+            true,
+        )])
+        .unwrap();
+        let decision = policy.check_write_target(&link);
+        assert!(!decision.allowed);
+    }
 }
