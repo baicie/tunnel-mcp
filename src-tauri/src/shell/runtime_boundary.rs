@@ -69,6 +69,9 @@ pub const PRODUCT_COMMANDS: &[&str] = &[
     "check_tunnel_client_update",
     "update_tunnel_client",
     "rollback_tunnel_client",
+    "list_workspace_profiles",
+    "save_workspace_profile",
+    "remove_workspace_profile",
 ];
 
 /// Combined command surface exposed by `lib.rs`. The runtime bootstrap

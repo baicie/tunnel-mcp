@@ -59,6 +59,9 @@ pub fn run() {
             commands::updater::check_tunnel_client_update,
             commands::updater::update_tunnel_client,
             commands::updater::rollback_tunnel_client,
+            commands::workspace::list_workspace_profiles,
+            commands::workspace::save_workspace_profile,
+            commands::workspace::remove_workspace_profile,
         ])
         .setup(|app| {
             shell::runtime_boundary::assert_runtime_boundary(

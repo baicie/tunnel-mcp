@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::product::permissions::scope::PermissionScope;
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +21,7 @@ pub struct SaveWorkspaceProfileInput {
     pub permission_scopes: Vec<PermissionScope>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListWorkspaceProfilesInput {

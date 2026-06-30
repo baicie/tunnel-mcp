@@ -86,7 +86,6 @@ fn lib_rs_should_not_export_legacy_business_modules() {
         "pub use s3_sync",
         "pub use usage",
         "pub use webdav",
-        "pub use workspace",
         "pub use update_settings",
         "pub use app_settings",
         "pub use app_state",
@@ -128,7 +127,6 @@ fn lib_rs_should_mount_shell_and_product_commands() {
         "hermes",
         "subscription",
         "balance",
-        "workspace",
         "copilot",
         "global_proxy",
         "failover",
@@ -184,7 +182,6 @@ fn commands_mod_should_only_expose_shell_and_product_commands() {
         "s3_sync",
         "usage",
         "webdav_sync",
-        "workspace",
     ] {
         assert!(
             !source.contains(forbidden),

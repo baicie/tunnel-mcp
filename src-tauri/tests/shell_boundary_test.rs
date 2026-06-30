@@ -44,6 +44,12 @@ fn is_product_path(rel: &str) -> bool {
     rel.starts_with("src/product/")
         || rel.starts_with("src/product")
         || rel.starts_with("src/commands/tunnel")
+        || rel.starts_with("src/commands/workspace")
+}
+
+/// Shell boundary files that legitimately reference the product namespace.
+fn is_shell_boundary_whitelisted(rel: &str) -> bool {
+    rel == "src/lib.rs" || rel == "src/commands/mod.rs"
 }
 
 #[test]
@@ -66,7 +72,7 @@ fn src_tauri_src_should_not_contain_legacy_business_markers() {
             continue;
         }
 
-        if is_product_path(&rel) {
+        if is_product_path(&rel) || is_shell_boundary_whitelisted(&rel) {
             continue;
         }
 

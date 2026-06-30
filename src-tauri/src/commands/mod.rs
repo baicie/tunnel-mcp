@@ -8,3 +8,4 @@ pub mod shell;
 pub mod tunnel;
 pub mod tunnel_process;
 pub mod updater;
+pub mod workspace;
