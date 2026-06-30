@@ -1,3 +1,6 @@
+use crate::product::security::secret_store::{
+    load_openai_key, save_openai_key, KeyringSecretStore,
+};
 use crate::product::settings::{
     to_public_settings, PublicTunnelSettings, SettingsError, SettingsStore, TunnelSettings,
 };
@@ -20,7 +23,13 @@ fn map_error(error: SettingsError) -> String {
 #[tauri::command]
 pub fn get_tunnel_settings(app: AppHandle) -> Result<PublicTunnelSettings, String> {
     let store = SettingsStore::new(settings_path(&app)?);
-    store.load().map(to_public_settings).map_err(map_error)
+    let mut settings = store.load().map_err(map_error)?;
+
+    if let Ok(key) = load_openai_key(&KeyringSecretStore) {
+        settings.openai_api_key = key;
+    }
+
+    Ok(to_public_settings(settings))
 }
 
 #[tauri::command]
@@ -29,10 +38,25 @@ pub fn save_tunnel_settings(
     settings: TunnelSettings,
 ) -> Result<PublicTunnelSettings, String> {
     let store = SettingsStore::new(settings_path(&app)?);
-    store
-        .save(settings)
-        .map(to_public_settings)
-        .map_err(map_error)
+
+    let key_to_save = settings.openai_api_key.clone();
+    let mut settings_without_key = settings;
+    settings_without_key.openai_api_key = None;
+
+    let saved = store
+        .save(settings_without_key)
+        .map_err(map_error)?;
+
+    if let Err(err) = save_openai_key(&KeyringSecretStore, key_to_save) {
+        log::warn!("failed to save OpenAI key to keyring: {}", err);
+    }
+
+    let mut final_settings = saved;
+    if let Ok(key) = load_openai_key(&KeyringSecretStore) {
+        final_settings.openai_api_key = key;
+    }
+
+    Ok(to_public_settings(final_settings))
 }
 
 #[tauri::command]

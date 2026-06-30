@@ -28,7 +28,16 @@ pub struct TunnelProcessManager {
 }
 
 impl TunnelProcessManager {
+    #[allow(dead_code)]
     pub fn start(&self, settings: &TunnelSettings) -> anyhow::Result<TunnelStatus> {
+        self.start_with_token(settings, None)
+    }
+
+    pub fn start_with_token(
+        &self,
+        settings: &TunnelSettings,
+        local_token: Option<String>,
+    ) -> anyhow::Result<TunnelStatus> {
         self.reap_exited_child();
 
         if self.is_running() {
@@ -62,7 +71,11 @@ impl TunnelProcessManager {
             .arg("--openai-key-env")
             .arg(OPENAI_KEY_ENV)
             .arg("--local-mcp-url")
-            .arg(&endpoint)
+            .arg(&endpoint);
+        if let Some(token) = local_token {
+            command.arg("--local-mcp-token").arg(token);
+        }
+        command
             .env(OPENAI_KEY_ENV, openai_key)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
@@ -94,9 +107,18 @@ impl TunnelProcessManager {
         self.status(settings)
     }
 
+    #[allow(dead_code)]
     pub fn restart(&self, settings: &TunnelSettings) -> anyhow::Result<TunnelStatus> {
+        self.restart_with_token(settings, None)
+    }
+
+    pub fn restart_with_token(
+        &self,
+        settings: &TunnelSettings,
+        local_token: Option<String>,
+    ) -> anyhow::Result<TunnelStatus> {
         let _ = self.stop(settings);
-        self.start(settings)
+        self.start_with_token(settings, local_token)
     }
 
     pub fn status(&self, settings: &TunnelSettings) -> anyhow::Result<TunnelStatus> {

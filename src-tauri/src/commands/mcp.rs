@@ -44,6 +44,13 @@ fn write_log_path(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|err| err.to_string())
 }
 
+fn local_token_path(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map(|dir| dir.join("local-token.json"))
+        .map_err(|err| err.to_string())
+}
+
 fn logs_path(app: &AppHandle) -> Result<PathBuf, String> {
     app.path()
         .app_data_dir()
@@ -92,7 +99,7 @@ pub async fn start_mcp_server(
     let write_context = build_write_context(&app)?;
 
     match manager
-        .start(settings.mcp_server_port, policy, write_context)
+        .start(settings.mcp_server_port, policy, write_context, local_token_path(&app)?)
         .await
     {
         Ok(status) => {

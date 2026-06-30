@@ -1,6 +1,7 @@
 use crate::product::logs::audit::append_audit_log;
 use crate::product::logs::event::LogLevel;
 use crate::product::logs::store::AuditLogStore;
+use crate::product::security::local_token::LocalTokenStore;
 use crate::product::settings::SettingsStore;
 use crate::product::status::TunnelStatus;
 use crate::product::tunnel::client_download::{
@@ -15,6 +16,13 @@ fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     app.path()
         .app_data_dir()
         .map(|dir| dir.join("settings.json"))
+        .map_err(|err| err.to_string())
+}
+
+fn local_token_path(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map(|dir| dir.join("local-token.json"))
         .map_err(|err| err.to_string())
 }
 
@@ -98,6 +106,9 @@ pub fn start_tunnel_client(
 ) -> Result<TunnelStatus, String> {
     let audit = audit_store(&app)?;
     let settings = load_settings(&app)?;
+    let local_token = LocalTokenStore::new(local_token_path(&app)?)
+        .get_or_create()
+        .ok();
 
     append_audit_log(
         &audit,
@@ -112,7 +123,7 @@ pub fn start_tunnel_client(
         }),
     );
 
-    match manager.start(&settings) {
+    match manager.start_with_token(&settings, local_token.map(|t| t.token)) {
         Ok(status) => {
             append_audit_log(
                 &audit,
@@ -195,6 +206,9 @@ pub fn restart_tunnel_client(
 ) -> Result<TunnelStatus, String> {
     let audit = audit_store(&app)?;
     let settings = load_settings(&app)?;
+    let local_token = LocalTokenStore::new(local_token_path(&app)?)
+        .get_or_create()
+        .ok();
 
     append_audit_log(
         &audit,
@@ -205,7 +219,7 @@ pub fn restart_tunnel_client(
         json!({}),
     );
 
-    match manager.restart(&settings) {
+    match manager.restart_with_token(&settings, local_token.map(|t| t.token)) {
         Ok(status) => {
             append_audit_log(
                 &audit,

@@ -1,9 +1,10 @@
 use super::protocol::{JsonRpcRequest, JsonRpcResponse};
 use super::resources::ReadPolicy;
 use super::tools::{handle_request, McpWriteContext, MCP_TOOLS};
+use crate::product::security::local_token::LocalTokenStore;
 use crate::product::status::McpServerStatus;
 use anyhow::anyhow;
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{extract::State, http::HeaderMap, routing::post, Json, Router};
 use log::{error, info};
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -15,6 +16,7 @@ use tokio::sync::oneshot;
 struct McpState {
     policy: Arc<dyn ReadPolicy>,
     write_context: Arc<McpWriteContext>,
+    token_path: PathBuf,
 }
 
 #[derive(Default)]
@@ -37,6 +39,7 @@ impl McpServerManager {
         port: u16,
         policy: Arc<dyn ReadPolicy>,
         write_context: Arc<McpWriteContext>,
+        token_path: PathBuf,
     ) -> anyhow::Result<McpServerStatus> {
         let authorized_roots = policy.authorized_roots();
 
@@ -72,6 +75,7 @@ impl McpServerManager {
             .with_state(McpState {
                 policy,
                 write_context,
+                token_path,
             });
 
         let (tx, rx) = oneshot::channel::<()>();
@@ -154,8 +158,15 @@ impl McpServerManager {
 
 async fn handle_http_mcp(
     State(state): State<McpState>,
+    headers: HeaderMap,
     Json(request): Json<JsonRpcRequest>,
 ) -> Json<JsonRpcResponse> {
+    let token = headers
+        .get("x-tunnel-mcp-token")
+        .and_then(|value| value.to_str().ok());
+    if let Err(err) = LocalTokenStore::new(state.token_path.clone()).verify(token) {
+        return Json(JsonRpcResponse::err(request.id, -32001, err.to_string()));
+    }
     Json(handle_request(
         request,
         state.policy.as_ref(),
