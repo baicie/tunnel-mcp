@@ -37,6 +37,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "serd
 dirs = "5"
 globset = "0.4"
 log = "0.4"
+regex = "1"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 serde_json = "1"
 serde = "1"

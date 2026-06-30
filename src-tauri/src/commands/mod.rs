@@ -1,5 +1,6 @@
 pub mod app;
 pub mod approvals;
+pub mod logs;
 pub mod mcp;
 pub mod permissions;
 pub mod settings;

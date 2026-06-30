@@ -63,6 +63,8 @@ pub const PRODUCT_COMMANDS: &[&str] = &[
     "list_approval_requests",
     "approve_request",
     "reject_request",
+    "list_logs",
+    "export_diagnostics",
 ];
 
 /// Combined command surface exposed by `lib.rs`. The runtime bootstrap

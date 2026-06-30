@@ -131,6 +131,7 @@ const allowedInvokeFiles = [
   "src/lib/api/permissions.ts",
   "src/lib/api/approvals.ts",
   "src/lib/api/dashboard.ts",
+  "src/lib/api/logs.ts",
 ];
 
 function allowedInvokeRel(rel) {
