@@ -35,7 +35,10 @@
     "check:template": "node scripts/check-template.mjs",
     "check:all": "pnpm check:app",
     "icons:generate": "node scripts/generate-icons.mjs",
-    "icons:check": "node scripts/generate-icons.mjs --check"
+    "icons:check": "node scripts/generate-icons.mjs --check",
+    "release:smoke": "node scripts/release-smoke.mjs",
+    "release:verify-artifacts": "node scripts/verify-release-artifacts.mjs",
+    "release:check": "pnpm release:smoke && pnpm tauri build && pnpm release:verify-artifacts"
   },
   "keywords": [],
   "license": "MIT",

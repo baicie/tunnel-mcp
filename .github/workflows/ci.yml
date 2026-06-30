@@ -47,6 +47,9 @@ jobs:
       - name: Frontend app checks
         run: pnpm check:app:frontend
 
+      - name: Unit tests
+        run: pnpm test:unit
+
   backend:
     name: Backend Checks
     runs-on: ubuntu-22.04
@@ -94,3 +97,6 @@ jobs:
 
       - name: Rust app checks
         run: pnpm check:app:rust
+
+      - name: Cargo lib tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --lib
